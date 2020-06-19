@@ -1,0 +1,38 @@
+version: 2.1
+
+orbs:
+  python: circleci/python@0.2.1
+
+# https://dev.to/jonatasbaldin/a-recipe-for-poetry-and-circleci-1bj6
+jobs:
+  build-and-test:
+    executor: python/default
+    steps:
+      - checkout
+      # - python/load-cache
+      - restore_cache:
+          keys:
+            - deps-{{ checksum "poetry.lock" }}
+          
+      # - python/install-deps
+      # - run:
+      #     command: poetry config virtualenvs.create false
+      # - run:
+      #     command: poetry config virtualenvs.in-project false
+      - run:
+          command: poetry install
+      # - python/save-cache
+      - save_cache:
+          key: deps-{{ checksum "poetry.lock" }}
+          paths:
+            - /home/circleci/.cache/pypoetry/virtualenvs
+      - run:
+          command: poetry run pytest -v --cov --cov-report=html
+
+      - store_artifacts:
+          path: ./htmlcov
+
+workflows:
+  main:
+    jobs:
+      - build-and-test

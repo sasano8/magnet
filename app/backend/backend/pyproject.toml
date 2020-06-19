@@ -1,0 +1,62 @@
+[tool.poetry]
+name = "magnet"
+version = "0.1.0"
+description = ""
+authors = ["sasano8"]
+license = "MIT"
+
+[tool.poetry.dependencies]
+python = "^3.7"
+typer = "^0.2.1"
+pyyaml = "^3.10"
+fastapi = "^0.58.0"
+uvicorn = "^0.11.5"
+requests = "^2.24.0"
+gunicorn = "^20.0.4"
+jinja2 = "^2.11.2"
+celery = "^4.4.5"
+alembic = "^1.4.2"
+sqlalchemy = "^1.3.17"
+
+[tool.poetry.dev-dependencies]
+pytest = "^5.2"
+pytest-cov = "^2.9.0"
+black = "^19.10b0"
+isort = "^4.3.21"
+
+# [tool.poetry-dynamic-versioning]
+# enable = true
+# style = "pep440"
+
+[tool.coverage.run]
+source = ["backend"]
+
+[tool.black]
+line-length = 88
+target-version = ['py38']
+include = '\.pyi?$'
+exclude_lines = 'if __name__ == .__main__.:'
+exclude = '''
+
+(
+  /(
+      \.eggs         # exclude a few common directories in the
+    | \.git          # root of the project
+    | \.hg
+    | \.mypy_cache
+    | \.tox
+    | \.venv
+    | _build
+    | buck-out
+    | build
+    | dist
+  )/
+  | foo.py           # also separately exclude a file named foo.py in
+                     # the root of the project
+)
+'''
+
+
+[build-system]
+requires = ["poetry>=0.12"]
+build-backend = "poetry.masonry.api"

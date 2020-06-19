@@ -1,0 +1,10 @@
+version: '3'
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    volumes:
+      - ./backend/backend:/app:rw
+    ports:
+      - 80:80

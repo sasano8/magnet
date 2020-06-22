@@ -1,10 +1,29 @@
 version: '3'
 services:
-  backend:
+  # selenium:
+  #  image: selenium/standalone-chrome
+  selenium-debug:
+    # 処理過程をデバッグしたい場合に利用(VNC portでリモート接続可能)
+    # image: selenium/standalone-chrome-debug
     build:
       context: ./backend
       dockerfile: Dockerfile
+    # environment:
+      # - IS_WORKER=0
+      # - START_XVFB: false # ヘッドレスモード 画面描画なしで利用する場合は、web driverはヘッドレスモードで実行しないといけない
+      # - VNC_NO_PASSWORD=1 # VNC接続時認証なし
+      # - GRID_DEBUG: true # 出力されるログの量が増える？
     volumes:
-      - ./backend/backend:/app:rw
+      # - ./backend/backend:/app:rw
+      - /dev/shm:/dev/shm # TODO: 意味をよく理解する。
     ports:
-      - 80:80
+      - "5900:5900" # VNC　defualtはpassでログイン
+      - "80:80"
+      - "8080:8080"
+      - "2222:22" # SSH
+  rabbitmq:
+    image: rabbitmq:3
+    ports:
+      - 5672:5672
+
+

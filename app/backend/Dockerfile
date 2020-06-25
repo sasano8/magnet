@@ -24,6 +24,7 @@ WORKDIR /app/
 RUN pip install dataclasses
 
 RUN ls -la
+RUN poetry update
 RUN poetry install
 
 COPY ./start.sh /start.sh

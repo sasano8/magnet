@@ -1,3 +1,4 @@
+import signal
 import os
 import time
 from typing import List
@@ -9,11 +10,21 @@ from celery import Celery
 # broker引数→ブローカーのURL
 
 
-app = Celery('crawler', broker='amqp://guest@queue:5672//')
+app = Celery('crawler', broker='amqp://guest@rabbitmq:5672//')
 # app.conf.result_backend = 'redis://localhost:6379/0'  # 実行結果を保存するために追加
 #app.conf.task_routes = {"app.worker.test_celery": "main-queue"}
 
 __DRIVER = None
+
+def receive_signal(signum, stack):
+    global __DRIVER
+    if __DRIVER:
+        __DRIVER.quit()
+        print("test")
+
+
+signal.signal(signal.SIGTERM, receive_signal)
+# signal.signal(signal.SIGKILL, receive_signal)
 
 def get_driver():
     # TODO: 起動時間がもったいないため、アイドル中のdriverを再利用したい。（難易度はかなり高い）
@@ -37,7 +48,7 @@ def get_driver():
         is_debug = True
 
         if is_debug:
-            connector = "http://selenium-debug:4444/wd/hub"
+            connector = "http://localhost:4444/wd/hub"
         else:
             connector = "http://selenium:4444/wd/hub"
 
@@ -82,16 +93,44 @@ def exec_crawler(keyword: str, option_keywords: List[str], deps: int = 0):
 
 
 if __name__ == "__main__":
-    # argv =[
-    #     "worker",
-    #     f"--app={app.Worker.app.main}",
-    #     "--loglevel=DEBUG",
-    #     "--queues=queue_crawler",
-    #     "-l=info",
-    #     "-c=1",
-    #     "-E"
-    # ]
-    # app.worker_main(argv=argv)
 
-    from entrypoint.start_crawler import main
-    main()
+
+    # app.conf.update(argv)
+    # app.conf.task_always_eager = True
+
+    kwargs = None
+
+    import threading
+
+    argv = [
+        "worker",
+        f"--app={app.Worker.app.main}",
+        "--loglevel=DEBUG",
+        "--queues=queue_crawler",
+        "-l=info",
+        "-c=1",
+        "-E"
+    ]
+
+    # main_func = lambda: app.worker_main(argv=argv)
+
+
+    from entrypoint.start_crawler import run
+    celery_cmdline = 'celery worker --app crawler -l info -c 1 -E --queues queue_crawler'
+    # p = os.getcwd()
+
+    run(os.getcwd(), celery_cmdline, os.getcwd())
+    # run(os.getcwd(), thread, os.getcwd())
+
+    # やりたいこと
+    # breakpointで捕捉させる
+    # auto reloadを有効にする
+
+    # 進捗
+    # 片方ずつのソリューションは実現することができた
+
+    # サブプロセスを作成しブレークポイントを捕捉できるか　→　捕捉できない
+    # スレッドを作成しブレークポイントを捕捉できるか
+    # loop機構でブレークポイントを捕捉できるか　→　ループ機構に当てはめる処理がどこか分からない　→ハックするのは困難
+
+

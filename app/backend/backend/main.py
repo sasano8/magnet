@@ -9,6 +9,12 @@ app = FastAPI()
 async def root():
     return {"message": "Hello World"}
 
+@app.get("/research/dramatiq")
+async def exec_dramatiq():
+    import dramatiq_crawler
+    dramatiq_crawler.count_words.send("http://example.com")
+
+
 
 @app.get("/research/default")
 async def exec_research_default(option_keywords: List[str] = Query(["破産"]), deps: int = 0,
@@ -87,3 +93,7 @@ if __name__ == "__main__":
 
     os.environ['IS_SELENIUM_DEBUG'] = 'True'
     uvicorn.run("main:app", host="0.0.0.0", port=8080, reload=True)
+
+    # from  uvicorn.loops.auto import auto_loop_setup
+    from uvicorn.protocols.http.httptools_impl import HttpToolsProtocol
+    # import uvloop

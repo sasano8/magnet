@@ -94,6 +94,3 @@ if __name__ == "__main__":
     os.environ['IS_SELENIUM_DEBUG'] = 'True'
     uvicorn.run("main:app", host="0.0.0.0", port=8080, reload=True)
 
-    # from  uvicorn.loops.auto import auto_loop_setup
-    from uvicorn.protocols.http.httptools_impl import HttpToolsProtocol
-    # import uvloop

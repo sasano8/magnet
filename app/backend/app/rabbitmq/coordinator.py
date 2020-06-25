@@ -1,8 +1,10 @@
 import pika
 import json
 import copy
+from rabbitmq import DelayTask
 
-class TaskFactory:
+
+class Coordinator:
 
     def __init__(self, broker_url, queue_name, auto_ack, durable, queue_delete):
         self.broker_url = broker_url
@@ -11,10 +13,9 @@ class TaskFactory:
         self.durable = durable
         self.queue_delete = queue_delete
         self.tasks = {}
-        
+
     def get_tasks(self):
         return copy.copy(self.tasks)
-
 
     def task(self, func_or_arg=None, *args, **kwargs):
 
@@ -27,10 +28,13 @@ class TaskFactory:
 
         def instantiate(*args, **kwargs):
             dic = dict(
-                manager=self
+                broker_url=self.broker_url,
+                queue_name=self.queue_name
             )
 
             for key, item in kwargs.items():
+                if key in dic:
+                    raise Exception("coordinatorから受け取った値と重複しています。 key: {}".format(key))
                 dic[key] = item
 
             obj = DelayTask(*args, **dic)
@@ -48,44 +52,22 @@ class TaskFactory:
             # 引数を保持した関数を返す
             return wrapper
 
+    def get_consumer(self):
+        from rabbitmq import Consumer
 
-class DelayTask:
-    def __init__(self, func, manager: TaskFactory, **kwargs):
-        self._func = func
-        self.manager = manager
-
-        self.func_name = func.__name__
-
-
-    def get_connection(self):
-        return pika.BlockingConnection(pika.ConnectionParameters(self.manager.broker_url))
-
-    def delay(self, *args, **kwargs):
-        connection = self.get_connection()
-        channel = connection.channel()
-
-        message = dict(
-            func=self.func_name,
-            args=args,
-            kwargs=kwargs
+        consumer = Consumer(
+            broker_url=self.broker_url,
+            queue_name=self.queue_name,
+            durable=self.durable,
+            tasks=self.get_tasks(),
+            auto_ack=self.auto_ack,
+            inactivity_timeout=1,
+            on_should_reload=None
         )
 
-        if len(args) == 0:
-            del message["args"]
+        return consumer
 
-        if len(kwargs) == 0:
-            del message["kwargs"]
-
-        body = json.dumps(message, ensure_ascii=False)
-
-        channel.basic_publish(exchange="",
-                              routing_key=self.manager.queue_name,
-                              body=body)
-
-        connection.close()
-
-
-    def __call__(self, *args, **kwargs):
-        return self._func(*args, **kwargs)
-
+    async def __call__(self):
+        consumer = self.get_consumer()
+        return await consumer.run()
 

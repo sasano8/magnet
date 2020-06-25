@@ -1,9 +1,6 @@
-import asyncio
-import random
 import json
 import pika
-
-from importlib import import_module
+import asyncio
 
 
 class Consumer:
@@ -80,6 +77,8 @@ class Consumer:
             body = json.loads(body)
             self.on_callback(channel, method, properties, body)
 
+            await asyncio.sleep(0.1)
+
         self.stop()
 
     def on_callback(self, ch, method, properties, body):
@@ -99,54 +98,3 @@ class Consumer:
         if self.auto_ack == False:
             # 処理完了を応答し、メッセージを削除する
             ch.basic_ack(delivery_tag=method.delivery_tag)
-
-
-def run(target_module):
-    loop = asyncio.get_event_loop()
-
-    while True:
-        from importlib import import_module
-        module, attr = target_module.split(":")
-        module = import_module(module)
-
-        app = getattr(module, attr)
-        tasks = app.get_tasks()
-
-
-
-
-        def on_should_reload():
-            num = random.randint(0, 10)
-            if num == 5:
-                return True
-            else:
-                return False
-
-        consumer = Consumer(
-            broker_url=app.broker_url,
-            queue_name=app.queue_name,
-            durable=app.durable,
-            tasks=app.get_tasks(),
-            auto_ack=app.auto_ack,
-            inactivity_timeout=1,
-            on_should_reload=on_should_reload
-        )
-
-        try:
-            result = loop.run_until_complete(consumer.run())
-
-        except KeyboardInterrupt as e:
-            print("購読を中止します")
-            break
-
-        finally:
-            consumer.stop()
-
-
-
-if __name__ == "__main__":
-    import sys
-    import os
-    cd = os.getcwd()
-    target = sys.argv[1]
-    run(target)

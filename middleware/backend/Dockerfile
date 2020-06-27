@@ -16,8 +16,8 @@ RUN sudo mkdir /run/sshd
 
 
 
-COPY ./backend/pyproject.toml /app/pyproject.toml
-COPY ./backend/poetry.lock* /app/
+COPY ./app/pyproject.toml /app/pyproject.toml
+COPY ./app/poetry.lock* /app/
 WORKDIR /app/
 
 # python3.6.9の場合、以下のパッケージが入れないと動かない
@@ -41,9 +41,9 @@ RUN sudo chmod +x /start-reload.sh
 COPY ./start_celery_worker.sh /start_celery_worker.sh
 RUN sudo chmod +x /start_celery_worker.sh
 
-COPY ./backend /app
+COPY ./app /app
 RUN ls -la
-# ONBUILD COPY ./backend /app
+# ONBUILD COPY ./app /app
 
 # RUN sudo chown -R seluser:seluser /app
 

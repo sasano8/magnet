@@ -6,12 +6,13 @@ from rabbitmq import DelayTask
 
 class Coordinator:
 
-    def __init__(self, broker_url, queue_name, auto_ack, durable, queue_delete):
+    def __init__(self, broker_url, queue_name, auto_ack, durable, queue_delete, async_concurrency = 1):
         self.broker_url = broker_url
         self.queue_name = queue_name
         self.auto_ack = auto_ack
         self.durable = durable
         self.queue_delete = queue_delete
+
         self.tasks = {}
 
     def get_tasks(self):
@@ -61,13 +62,9 @@ class Coordinator:
             durable=self.durable,
             tasks=self.get_tasks(),
             auto_ack=self.auto_ack,
-            inactivity_timeout=1,
-            on_should_reload=None
+            inactivity_timeout=1
         )
 
         return consumer
 
-    async def __call__(self):
-        consumer = self.get_consumer()
-        return await consumer.run()
 

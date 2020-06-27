@@ -9,12 +9,18 @@ app = FastAPI()
 async def root():
     return {"message": "Hello World"}
 
-@app.get("/research/dramatiq")
-async def exec_dramatiq():
-    import dramatiq_crawler
-    dramatiq_crawler.count_words.send("http://example.com")
+# @app.get("/research/dramatiq")
+# async def exec_dramatiq():
+#     import dramatiq_crawler
+#     dramatiq_crawler.count_words.send("http://example.com")
 
-
+@app.post("/rabbitmq/task")
+async def post_task(msg: str):
+    import myworker
+    myworker.hello.delay(msg)
+    return {
+        "message": "accepted."
+    }
 
 @app.get("/research/default")
 async def exec_research_default(option_keywords: List[str] = Query(["破産"]), deps: int = 0,

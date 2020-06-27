@@ -1,6 +1,8 @@
-import deco_worker
+import myworker
 
 count = 0
+
+
 
 def countup():
     global count
@@ -8,9 +10,10 @@ def countup():
     return count
 
 def send():
-    deco_worker.add.delay(countup(), 2)
-    deco_worker.add2.delay(countup(), 2)
-    deco_worker.add3.delay(countup(), 2)
+    myworker.task_await.delay()
+    myworker.add.delay(countup(), 2)
+    # deco_worker.add2.delay(countup(), 2)
+    # deco_worker.add3.delay(countup(), 2)
 
 
 send()

@@ -14,7 +14,7 @@ services:
       # - VNC_NO_PASSWORD=1 # VNC接続時認証なし
       # - GRID_DEBUG: true # 出力されるログの量が増える？
     volumes:
-      - ./backend/backend:/app:rw
+      - ./backend/app:/app:rw
       - /dev/shm:/dev/shm # TODO: 意味をよく理解する。
     ports:
       - "5900:5900" # VNC　defualtはpassでログイン

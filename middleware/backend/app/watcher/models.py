@@ -39,9 +39,7 @@ class FileChangeDetector:
                 display_path = os.path.normpath(filename)
                 if Path.cwd() in Path(filename).parents:
                     display_path = os.path.normpath(os.path.relpath(filename))
-                message = "Detected file change in '%s'"
-                logger.warning(message, display_path)
-                self.callback()
+                self.callback(display_path)
                 return True
         return False
 

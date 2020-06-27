@@ -5,12 +5,13 @@ import click
 from cli import cli_rabbitmq
 from cli import cli_uvicorn
 from cli import cli_elasticsearch
+from cli import cli_dev
 
 app = typer.Typer()
 app.add_typer(cli_rabbitmq.app, name="worker")
 app.add_typer(cli_uvicorn.app, name="uvicorn")
 app.add_typer(cli_elasticsearch.app, name="elasticsearch")
-
+app.add_typer(cli_dev.app, name="dev")
 
 
 # # resilient_parsing: dockerfm.tomlが存在する場合、対話形式のプロンプトを無視する。値はNoneとなる。

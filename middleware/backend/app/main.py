@@ -1,6 +1,8 @@
 import os
 from typing import List
-from fastapi import BackgroundTasks, FastAPI, Query
+from fastapi import BackgroundTasks, FastAPI, Query, Depends
+
+import  magnet.api.user
 
 app = FastAPI()
 
@@ -94,9 +96,5 @@ async def enqueue():
     return {"message": "Word received"}
 
 
-if __name__ == "__main__":
-    import uvicorn
-
-    os.environ['IS_SELENIUM_DEBUG'] = 'True'
-    uvicorn.run("main:app", host="0.0.0.0", port=8080, reload=True)
+app.include_router(magnet.api.user.router)
 

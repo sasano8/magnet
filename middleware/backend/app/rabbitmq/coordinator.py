@@ -1,12 +1,21 @@
-import pika
-import json
 import copy
-from rabbitmq import DelayTask
+import json
+
+import pika
+
+from rabbitmq.task import DelayTask
 
 
 class Coordinator:
-
-    def __init__(self, broker_url, queue_name, auto_ack, durable, queue_delete, async_concurrency = 1):
+    def __init__(
+        self,
+        broker_url,
+        queue_name,
+        auto_ack,
+        durable,
+        queue_delete,
+        async_concurrency=1,
+    ):
         self.broker_url = broker_url
         self.queue_name = queue_name
         self.auto_ack = auto_ack
@@ -19,7 +28,7 @@ class Coordinator:
         return copy.copy(self.tasks)
 
     def task(self, func_or_arg=None, *args, **kwargs):
-
+        # TODO: タスクをdelayでなく通常呼び出しを行った場合に、位置引数を受け入れずエラーとなる　例 ex_task(param) -> NG  ex_task.delay(param) -> OK
         def wrapper(func_or_arg=None):
             wrapper_parameter_arg = args
             wrapper_parameter_kwargs = kwargs
@@ -28,10 +37,7 @@ class Coordinator:
             return obj
 
         def instantiate(*args, **kwargs):
-            dic = dict(
-                broker_url=self.broker_url,
-                queue_name=self.queue_name
-            )
+            dic = dict(broker_url=self.broker_url, queue_name=self.queue_name)
 
             for key, item in kwargs.items():
                 if key in dic:
@@ -62,9 +68,7 @@ class Coordinator:
             durable=self.durable,
             tasks=self.get_tasks(),
             auto_ack=self.auto_ack,
-            inactivity_timeout=1
+            inactivity_timeout=1,
         )
 
         return consumer
-
-

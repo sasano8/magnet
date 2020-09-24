@@ -1,17 +1,16 @@
 import os
-import typer
-import click
 
-from cli import cli_rabbitmq
-from cli import cli_uvicorn
-from cli import cli_elasticsearch
-from cli import cli_dev
+import click
+import typer
+
+from cli import cli_dev, cli_elasticsearch, cli_rabbitmq, cli_uvicorn, cli_db
 
 app = typer.Typer()
 app.add_typer(cli_rabbitmq.app, name="worker")
 app.add_typer(cli_uvicorn.app, name="uvicorn")
 app.add_typer(cli_elasticsearch.app, name="elasticsearch")
 app.add_typer(cli_dev.app, name="dev")
+app.add_typer(cli_db.app, name="db")
 
 
 # # resilient_parsing: dockerfm.tomlが存在する場合、対話形式のプロンプトを無視する。値はNoneとなる。
@@ -26,7 +25,6 @@ app.add_typer(cli_dev.app, name="dev")
 # ):
 #     """Manage rabbitmq consumers."""
 #     pass
-
 
 
 if __name__ == "__main__":

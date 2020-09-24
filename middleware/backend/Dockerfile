@@ -1,6 +1,7 @@
 FROM sasano8/basic_fastapi_selenium-standalone-chrome-debug as builder
 LABEL maintainer="sasano8"
 
+
 USER root
 
 ENV PYTHONPATH=/app

@@ -1,9 +1,9 @@
 import asyncio
-import random
 import json
-import pika
-
+import random
 from importlib import import_module
+
+import pika
 
 
 def start_consumer(target_module):
@@ -11,6 +11,7 @@ def start_consumer(target_module):
 
     while True:
         from importlib import import_module
+
         module, attr = target_module.split(":")
         module = import_module(module)
 
@@ -21,7 +22,9 @@ def start_consumer(target_module):
         try:
             is_changed_files = FileChangeDetector("/app")
             is_changed_files.set_callback(consumer.stop)
-            watcher = is_changed_files.get_coroutine(interval=1, run_until_file_changed=True)
+            watcher = is_changed_files.get_coroutine(
+                interval=1, run_until_file_changed=True
+            )
 
             loop = asyncio.new_event_loop()
             loop.create_task(consumer.run())
@@ -34,7 +37,3 @@ def start_consumer(target_module):
         finally:
             loop.close()
             consumer.stop()
-
-
-
-

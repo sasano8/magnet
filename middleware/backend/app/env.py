@@ -1,4 +1,3 @@
-
 class const:
     class ConstError(TypeError):
         pass
@@ -8,8 +7,10 @@ class const:
             raise self.ConstError("Can't rebind const (%s)" % name)
         self.__dict__[name] = value
 
+
 class env:
     pass
+
 
 const.UVICORN_PRO_PORT = 80
 const.UVICORN_PRO_RELOAD = True

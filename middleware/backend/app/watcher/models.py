@@ -5,11 +5,14 @@ from pathlib import Path
 
 logger = logging.getLogger("FileChangeDetector.error")
 
+
 class FileChangeDetector:
     def __init__(self, *reload_dirs):
         self.mtimes = {}
         self.reload_dirs = reload_dirs
-        self.callback = lambda display_path:logger.warning("Detected file change in '%s'", display_path)
+        self.callback = lambda display_path: logger.warning(
+            "Detected file change in '%s'", display_path
+        )
 
     def set_callback(self, callback):
         if callback is None:
@@ -17,7 +20,7 @@ class FileChangeDetector:
         else:
             self.callback = callback
 
-    async def get_coroutine(self, interval = 1, run_until_file_changed = False):
+    async def get_coroutine(self, interval=1, run_until_file_changed=False):
         while True:
             await asyncio.sleep(interval)
             is_file_changed = self()

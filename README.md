@@ -1,13 +1,11 @@
-# ymltree
-treeコマンドの出力結果をymlとして出力するためのライブラリです。
+# magnet
+様々な実験的な機能を含むデータ収集・データ分析・仮想通貨等の自動売買を目指す。
 
-# Why
-treeコマンドは、ディレクトリ構造を人の目で見て直感的に分かりやすい形で出力しますが、その出力は再利用を考慮されていません。時々、テキストにディレクトリ構造を定義し、定義からディレクトリを自動生成したいと考えることはありませんか？このライブラリは、ymlでディレクトリ構造をシリアライズし、他社がそれをデシリアライズすることを支援します。
-
-# Getting Started
-
-```
-ymltree
-ymltree --output directories.yml
-ymltree --make diretories.yml
-```
+# functions
+- crawler
+  - crypt currency
+- etl
+- job manager & message queue
+- data store
+- full text search(backend: elasticsearch)
+- auto trading

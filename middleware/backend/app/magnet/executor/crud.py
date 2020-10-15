@@ -1,13 +1,14 @@
 from libs.decorators import Instantiate
-from magnet.database import GenericRepository
+from libs.fastapi import GenericRepository
 from . import models
 
-@Instantiate
+
+# @Instantiate
 class Executor(GenericRepository[models.Executor]):
     pass
 
 
-@Instantiate
+# @Instantiate
 class ExecutorJob(GenericRepository[models.ExecutorJob]):
     pass
 

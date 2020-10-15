@@ -1,6 +1,4 @@
-from typing import List, Optional, Any
-from pydantic import BaseModel
-from magnet.ingester import schemas, service
+from magnet import BaseModel
 
 
 class DispatchCreate(BaseModel):

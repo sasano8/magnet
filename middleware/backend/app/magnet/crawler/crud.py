@@ -1,4 +1,4 @@
 from libs import decorators
+from magnet.config import Env
 
-crawlers = decorators.Tag(tag="crawler", key_selector=lambda func: func.__name__)
-
+crawlers = Env.crawlers

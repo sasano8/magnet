@@ -1,27 +1,39 @@
 from typing import List, Optional
-from fastapi import (APIRouter, Depends, FastAPI, HTTPException, Query,
-                     Security, status)
+from fastapi import HTTPException,status
 from sqlalchemy.orm import Session
-from . import schemas, service, worker
-from magnet.database import get_db
+from . import schemas, worker, crud
 from magnet.ingester import schemas as ingester
-
-router = APIRouter()
-
-
-@router.get("/", response_model=List[schemas.ExecutorBase])
-async def list(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
-    return service.list_executor(db, skip=skip, limit=limit)
+from magnet import get_db, CommonQuery, default_query, TemplateView, Depends
+from magnet.vendors import cbv, InferringRouter
 
 
-@router.post("/", response_model=schemas.ExecutorBase)
-async def create(input: schemas.ExecutorCreate, db: Session = Depends(get_db)):
-    return service.create_executor(db, input, is_system=False)
+router = InferringRouter()
 
 
-@router.post("/job/", status_code=status.HTTP_202_ACCEPTED)
-async def request_job(task: ingester.TaskCreate):
-    try:
-        worker.exec_job.delay(task)
-    except Exception as e:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+@cbv(router)
+class ExecutorView(TemplateView[crud.Executor]):
+    db: Session = Depends(get_db)
+
+    @property
+    def rep(self) -> crud.Executor:
+        return super().rep
+
+    @router.get("/")
+    async def index(self, q: CommonQuery = default_query) -> List[schemas.ExecutorBase]:
+        return super().index(skip=q.skip, limit=q.limit)
+
+    @router.post("/")
+    async def create(self, data: schemas.ExecutorCreate, is_system: bool = False) -> schemas.ExecutorBase:
+        dic = data.dict()
+        dic["is_system"] = is_system
+        # dic = {"is_system": is_system, **data.dict()} こうできるかも
+        obj = schemas.ExecutorBase(**dic)
+        return super().create(data=data)
+
+    @router.post("/execute", status_code=status.HTTP_202_ACCEPTED)
+    async def request_job(self, data: ingester.TaskCreate):
+        try:
+            worker.exec_job.delay(data)
+        except Exception as e:
+            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+

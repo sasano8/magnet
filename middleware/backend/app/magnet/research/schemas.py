@@ -1,37 +1,15 @@
 from typing import List, Optional
-from pydantic import BaseModel
-from magnet import config
-
-class CaseNodeCreate(BaseModel):
-    name: str
+from magnet import config, BaseModel
 
 
-class CaseNodeBase(BaseModel):
+class CaseNode(BaseModel):
     Config = config.ORM
     id: int
     name: str
 
 
-class CaseNodeUpdate(BaseModel):
-    Config = config.ORM
-    id: Optional[int]
-    name: Optional[str]
-
-
-class TargetCreate(BaseModel):
-    name: str
-    node_id: int
-
-
-class TargetBase(BaseModel):
+class Target(BaseModel):
     Config = config.ORM
     id: int
     name: str
     node_id: int
-
-
-class TargetUpdate(BaseModel):
-    Config = config.ORM
-    id: Optional[int]
-    name: Optional[str]
-    node_id: Optional[int]

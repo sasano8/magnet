@@ -6,6 +6,20 @@ import asyncio
 from functools import wraps, partial
 from pydantic import parse_obj_as, Json
 
+"""
+デコレータパターン
+
+wrap
+    - pre processing
+    - post processing 
+
+mimic
+    - instantiate
+
+constractor: 定義時の初期化処理を
+tag: オブジェクトにタグを追加する
+
+"""
 
 class Instantiate(abstract.InterfaceDecorator):
     """クラスに付与することで、クラス宣言時にそのクラスのインスタンスを作成し、クラスをインスタンスに置き換える。"""
@@ -30,6 +44,30 @@ class Hook(abstract.InterfaceDecorator):
 
     def hook(self, target):
         self.hook_func(target)
+
+
+class Extension(abstract.InterfaceDecorator):
+    """対象の宣言時にフック処理を注入する。"""
+    def __init__(self, *, target, name=None, override=False):
+        self.target = target
+        self.extension_name = name
+        self.override = override
+
+    def valid_target(self, target):
+        return True
+
+    def return_decorated(self, target):
+        return target
+
+    def hook(self, target):
+        if not self.extension_name:
+            self.extension_name = target.__name__
+
+        if hasattr(self.target, self.extension_name):
+            if not self.override:
+                raise ValueError("属性がすでに存在します。: {} {}".format(self.target, self.extension_name))
+
+        setattr(target, self.extension_name, self.extension)
 
 
 class PrintLog(abstract.FuncDecorator):

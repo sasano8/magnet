@@ -1,6 +1,7 @@
 from functools import wraps, partial
 import inspect
 import asyncio
+from pydantic import BaseModel, Extra
 
 class InterfaceDecorator():
     def __new__(cls, *args, **kwargs):
@@ -66,26 +67,6 @@ class InterfaceDecorator():
         if not self.valid_target(target):
             raise ValueError("想定していない型が引数に渡されました。:{}".format(target))
 
-        # if len(args) == 1 and len(kwargs) == 0:
-        #     if not self.valid_target(args[0]):
-        #         raise ValueError("想定していない型が引数に渡されました。:{}".format(args[0]))
-        #     else:
-        #         is_target = True
-        # else:
-        #     is_target = False
-        #
-        # # 引数付きデコレータ処理
-        # if not is_target:
-        #     self.args = args
-        #     self.kwargs = kwargs
-        #     return self
-        #
-        # target = args[0]
-
-        # self.__init__(*self.args, **self.kwargs)
-
-        # self.valid_args(*self.args, **self.kwargs)
-        # self.on_decorate(target)
         self.init_target(target)
         wrapped = self.return_decorated(target)
         self.hook(wrapped)
@@ -93,14 +74,6 @@ class InterfaceDecorator():
 
     def valid_target(self, target):
         raise NotImplementedError()
-
-    # def valid_args(self, *args, **kwargs):
-    #     """デコレータに渡された引数を検証する。オーバーライドする場合、位置引数とキーワード引数はより具体的に宣言してもよい。"""
-    #     pass
-
-    # def on_decorate(self, target):
-    #     """引数検証後のデコレータ内部状態の初期化を行う。"""
-    #     pass
 
     def return_decorated(self, target):
         """デコレートされたオブジェクト、あるいは、対象の情報から生成された別のオブジェクトを返す。"""

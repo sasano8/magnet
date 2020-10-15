@@ -1,6 +1,6 @@
 from pydantic import BaseSettings, BaseModel, SecretStr, Field
 from typing import List, Dict, Optional, Literal, Final
-from libs.decorators import Instantiate
+from libs.decorators import Instantiate, Tag
 from rabbitmq import RabbitApp
 import os
 
@@ -9,6 +9,7 @@ import os
 # TODO: 環境変数版のopenapiのようなものはないか
 
 env_path = os.path.join(os.path.dirname(__file__), "..", ".env")
+
 
 class EnvBase(BaseSettings):
     class Config:
@@ -44,14 +45,6 @@ class Rabbitmq(EnvBase, BaseSettings):
         env_prefix = "RABBITMQ_"
 
     url: str = ""
-
-
-# class MessageQueue(BaseSettings):
-#     broker_url: str = "rabbitmq"
-#     queue_name: str = "default"
-#     auto_ack: bool = False
-#     durable: bool = True
-#     queue_delete: bool = True
 
 
 class DatabaseCredential(BaseSettings):
@@ -101,6 +94,9 @@ class UserAccessToken(EnvBase):
 
 @Instantiate
 class Env(BaseSettings):
+    class Config:
+        arbitrary_types_allowed = True
+
     access_token: UserAccessToken = UserAccessToken()
     logging: Dict[str, Logging] = {
         "default": Logging()
@@ -109,13 +105,6 @@ class Env(BaseSettings):
         "default": DatabasePostgresCredential()
     }
     queues: Dict[str, RabbitApp] = {
-        # "default": MessageQueue(
-        #     broker_url=Rabbitmq().url,
-        #     queue_name="default",
-        #     auto_ack=False,
-        #     durable=True,
-        #     queue_delete=True,
-        # )
         "default": RabbitApp(
             broker_url=Rabbitmq().url,
             queue_name="default",
@@ -124,8 +113,9 @@ class Env(BaseSettings):
             queue_delete=True,
         )
     }
+    crawlers: Tag = Tag(tag="crawler", key_selector=lambda func: func.__name__)
+    trade_algorithms: Tag = Tag(tag="trade_algorithm", key_selector=lambda func: func.__name__)
     api_credentials: Dict[str, APICredential] = {
         "zaif": APICredentialZaif(),
         "bitflyer": APICredentialBitflyer()
     }
-

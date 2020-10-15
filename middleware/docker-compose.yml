@@ -8,6 +8,9 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
+      args:
+        UID: $UID
+        GID: $GID
     # environment:
       # - IS_WORKER=0
       # - START_XVFB: false # ヘッドレスモード 画面描画なしで利用する場合は、web driverはヘッドレスモードで実行しないといけない
@@ -21,11 +24,12 @@ services:
       - "80:80"
       - "8080:8080"
       - "2222:22" # SSH
+
   rabbitmq:
     image: rabbitmq:3-management
     ports:
-      - 5672:5672
-      - 15672:15672 #guest:guest
+      - 5672:5672  # queue port
+      - 15672:15672  #rabbitmq management console guest:guest
   # sudo apt install rabbitmq-server
 
   db:

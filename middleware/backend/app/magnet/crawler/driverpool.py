@@ -4,7 +4,7 @@ get_driver_managerにより、シングルトンのセレニウムインスタ�
 """
 
 import os
-from magnet.log import logger
+from magnet import logger
 from selenium import webdriver
 from selenium.webdriver import DesiredCapabilities
 

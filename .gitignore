@@ -3,6 +3,7 @@ dist/
 __pycache__/
 .pytest_cache
 .idea
+__.idea
 .coverage
 htmlcov/
 *.egg-info

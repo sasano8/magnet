@@ -4,13 +4,17 @@ from . import crud, schemas
 from .impl import enums
 from .impl import exchanges as ex
 from .impl import broker
-from fastapi import HTTPException
+from fastapi import HTTPException, Depends
 from pydantic import create_model
 # from workers import rabbitmq
-from magnet.config import rabbitmq
+from magnet import rabbitmq, Linq
 from libs.generator import dump_pydantic_code_from_json
 from pydantic import BaseModel
 import json
+import magnet.datastore.crud as datastore_crud
+import magnet.datastore.schemas as datastore_schemas
+from typing import List
+import datetime
 
 
 def get_exchange(name: enums.Exchange):
@@ -147,8 +151,49 @@ async def exec_bitflyer(profile: schemas.ProfilePrimitive):
 
         count += 1
 
-async def get_all_chart():
-    exchange = ex.CryptowatchAPI
-    result = await exchange.list_ohlc()
+
+from magnet.database import get_db
+
+
+
+async def load_ohlc_by_laundering(market: str = "bitfllyer", product: str = "bitcjpy", periods: int = 60 * 60 * 24, after: datetime.datetime = datetime.datetime(2010, 1, 1), db=Depends(get_db)):
+    """指定したリソースの４本値を洗い替えする"""
+
+    api = ex.CryptowatchAPI
+    provider = "cryptowatch"
+
+    def convert(obj) -> datastore_schemas.Ohlc:
+        # import magnet.trade.impl.exchanges.cryptowat
+        # obj: magnet.trade.impl.exchanges.cryptowat.Ohlc = obj
+
+        return datastore_schemas.Ohlc(
+            provider=provider,
+            market=market,
+            product=product,
+            periods=periods,
+            close_time=obj.close_time,
+            open_price=obj.open_price,
+            high_price=obj.high_price,
+            low_price=obj.low_price,
+            close_price=obj.close_price,
+            volume=obj.volume,
+            quote_volume=obj.quote_volume
+        )
+
+    result = await api.list_ohlc(market="bitflyer", product="btcjpy", periods=periods, after=after)
+    mapped = map(convert, result)
+    mapped = datastore_schemas.Ohlc.compute_technical(mapped)
+
+    result = datastore_crud.CryptoOhlcDaily.bulk_insert_by_laundering(
+        db=db,
+        data=mapped,
+        provider=provider,
+        market=market,
+        product=product,
+        periods=periods,
+        after=after
+    )
+
     return result
+
 

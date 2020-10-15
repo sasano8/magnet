@@ -8,6 +8,7 @@ license = "MIT"
 [tool.poetry.dependencies]
 # python = "^3.6.9"
 python = "^3.8"
+# python = "^3.9"
 # for python 3.6
 async-exit-stack = "^1.0.1"
 async-generator = "^1.10"
@@ -26,7 +27,8 @@ pydantic = "^1.6.1"
 # database/message queue
 sqlalchemy = "^1.3.17"
 sqlalchemy-utils = "^0.36.6"
-psycopg2-binary = "*" # postgresSQL
+eralchemy = "^1.2.10"  # output entity relation from sqlalchemy
+psycopg2-binary = "*"  # postgresSQL
 alembic = "^1.4.2"
 pika = "^1.1.0"
 elasticsearch = "*"
@@ -41,8 +43,8 @@ bs4 = "*"
 
 # etl
 pandas = "*"
-xlrd = "*"
 openpyxl = "*"
+xlrd = "*"
 xlsxwriter = "*"
 
 
@@ -67,6 +69,9 @@ datamodel-code-generator = "^0.5.32"
 # security
 pyjwt = "^1.7.1"
 passlib = {extras = ["bcrypt"], version = "^1.7.2"}
+pydotplus = "^2.0.2"
+fastapi-utils = "^0.2.1"
+
 
 [tool.poetry.dev-dependencies]
 pytest = "^5.2"
@@ -111,3 +116,4 @@ exclude = '''
 [build-system]
 requires = ["poetry>=0.12"]
 build-backend = "poetry.masonry.api"
+

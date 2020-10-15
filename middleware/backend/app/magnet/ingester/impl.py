@@ -1,7 +1,7 @@
 from pydantic import BaseModel
 from typing import Any
-from . import schemas, service
-from magnet.log import logger
+from . import schemas
+from magnet import logger
 
 
 class PipelineBase(BaseModel):

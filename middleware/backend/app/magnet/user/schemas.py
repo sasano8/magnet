@@ -1,12 +1,10 @@
 from typing import List, Optional
 
-from pydantic import BaseModel
+from magnet import BaseModel
 
 
 class ORM:
     orm_mode = True
-
-
 
 
 class Token(BaseModel):
@@ -17,11 +15,6 @@ class Token(BaseModel):
 class TokenData(BaseModel):
     username: Optional[str] = None
     scopes: List[str] = []
-
-
-class ItemCreate(BaseModel):
-    title: str
-    description: str = None
 
 
 class Item(BaseModel):

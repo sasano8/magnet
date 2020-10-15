@@ -2,9 +2,10 @@ from fastapi import HTTPException
 from sqlalchemy.orm import Session
 from . import crud, schemas, models, utils
 
+# utils = utils.authorizer
 
 def list_user(db: Session, skip: int = 0, limit: int = 100):
-    return crud.User.list(db, skip=skip, limit=limit)
+    return crud.User.index(db, skip=skip, limit=limit)
 
 
 def create_user(db: Session, user: schemas.UserCreate):

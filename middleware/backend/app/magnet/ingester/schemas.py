@@ -1,5 +1,5 @@
 from typing import List, Optional, Any
-from pydantic import BaseModel, Json
+from magnet import BaseModel
 
 class ORM:
     orm_mode = True
@@ -12,6 +12,7 @@ class Detail(BaseModel):
     summary: Optional[str]
     class Config:
         extra = "allow"
+
 
 class CommonDimension(BaseModel):
     job_id: int

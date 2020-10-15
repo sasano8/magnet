@@ -1,16 +1,19 @@
 from typing import List, Optional
-from fastapi import (APIRouter, Depends, FastAPI, HTTPException, Query,
-                     Security, status)
-from magnet.database import get_db
-from sqlalchemy.orm import Session
-from . import service, crud
-from libs import decorators
-
-router = APIRouter()
+from . import crud
+from magnet import get_db, TemplateView, CommonQuery, default_query
+from magnet.vendors import cbv, InferringRouter
 
 
-@router.get("/", response_model=List[str])
-async def list_crawler():
-    mapping = map(lambda key_value: key_value[0], crud.crawlers.list())
-    arr = list(mapping)
-    return arr
+router = InferringRouter()
+
+@cbv(router)
+class CrawlerView(TemplateView[crud.crawlers]):
+    @property
+    def rep(self) -> crud.crawlers:
+        raise NotImplementedError()
+
+    @router.get("/")
+    async def index(self, q: CommonQuery = default_query) -> List[str]:
+        mapping = map(lambda key_value: key_value[0], crud.crawlers.list())
+        arr = list(mapping)
+        return arr

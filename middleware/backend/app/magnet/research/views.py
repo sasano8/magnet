@@ -1,9 +1,10 @@
-from fastapi import (APIRouter, Depends, FastAPI, HTTPException, Query,
-                     Security, status)
 from enum import Enum
 from typing import List
-from sqlalchemy.orm import Session
-from magnet.database import get_db, TrapDB, TemplateView
+
+from pip._internal import req
+
+from magnet import Session, default_query, CommonQuery, get_db, Depends
+from magnet.vendors import cbv, InferringRouter, TemplateView
 from . import models, crud, schemas
 
 
@@ -16,103 +17,71 @@ class Language(str, Enum):
     jp = "jp"
     en = "en"
 
-router = APIRouter()
-v_casenode = TemplateView(rep=crud.Casenode)
-v_target = TemplateView(rep=crud.Target)
+
+router = InferringRouter()
 
 
-@router.get("/case", response_model=List[schemas.CaseNodeBase])
-async def list_casenode(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
-    return v_casenode.list(
-        db=db, skip=skip, limit=limit
-    )
+@cbv(router)
+class CaseNodeView(TemplateView[crud.Casenode]):
+    db: Session = Depends(get_db)
+
+    @property
+    def rep(self) -> crud.Target:
+        return super().rep
+
+    @router.get("/case")
+    async def index(self, q: CommonQuery = default_query) -> List[schemas.CaseNode]:
+        return super().index(skip=q.skip, limit=q.limit)
+
+    @router.post("/case")
+    async def create(self, data: schemas.CaseNode.transform("Create", exclude=["id"])) -> schemas.CaseNode:
+        return super().create(data=data)
+
+    @router.get("/case/{id}")
+    async def get(self, id: int) -> schemas.CaseNode:
+        return super().get(id=id)
+
+    @router.delete("/case/{id}/delete", status_code=200)
+    async def delete(self, id: int) -> int:
+        return super().delete(id=id)
+
+    @router.patch("/case/{id}/patch")
+    async def patch(self, id: int, data: schemas.CaseNode.transform("Patch", optionals=[...])) -> schemas.CaseNode:
+        return super().patch(id=id, data=data)
+
+    @router.post("/case/{id}/copy")
+    async def copy(self, id: int) -> schemas.CaseNode:
+        return super().duplicate(id=id)
 
 
-@router.get("/case/{id}", response_model=schemas.CaseNodeBase)
-async def get_casenode(id: int, db: Session = Depends(get_db)):
-    return v_casenode.get(db, id=id)
+@cbv(router)
+class TargetView(TemplateView[crud.Target]):
+    db: Session = Depends(get_db)
 
+    @property
+    def rep(self) -> crud.Target:
+        return super().rep
 
-@router.post("/case", response_model=schemas.CaseNodeBase)
-async def create_casenode(input: schemas.CaseNodeCreate, db: Session = Depends(get_db)):
-    with TrapDB():
-        result = crud.Casenode.create(db, input=input)
+    @router.get("/target")
+    async def index(self, q: CommonQuery = default_query) -> List[schemas.Target]:
+        return super().index(skip=q.skip, limit=q.limit)
 
-    return result
+    @router.post("/target")
+    async def create(self, data: schemas.Target.transform("Create", exclude=["id"])) -> schemas.Target:
+        return super().create(data=data)
 
-@router.delete("/case/{id}", status_code=200)
-async def delete_casenode(id: int, db: Session = Depends(get_db)):
-    with TrapDB():
-        crud.Casenode.delete(db, id=id)
+    @router.get("/target/{id}")
+    async def get(self, id: int) -> schemas.Target:
+        return super().get(id=id)
 
+    @router.delete("/target/{id}/delete", status_code=200)
+    async def delete(self, id: int) -> int:
+        return super().delete(id=id)
 
-@router.patch("/case/{id}", response_model=schemas.CaseNodeUpdate)
-async def update_casenode(id: int, input: schemas.CaseNodeUpdate, ignore_unknown_attr: bool = False, db: Session = Depends(get_db)):
-    if ignore_unknown_attr:
-        pass
-        # TODO: タイポなど誤った属性入力時にエラーとする
+    @router.patch("/target/{id}/patch")
+    async def patch(self, id: int, data: schemas.Target.transform("Patch", optionals=[...])) -> schemas.Target:
+        return super().patch(data=data)
 
-    if hasattr(input, "id"):
-        if (input.id is not None) and (not id == input.id):
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
-                                detail="Can not allow to update id. targeted id:{} requested id:{}.".format(id,
-                                                                                                            input.id))
-        else:
-            if id is not None:
-                input.id = id
-
-    with TrapDB():
-        result = crud.Casenode.update(db, input)
-
-    return result
-
-
-
-@router.post("/case/{src_id}", response_model=schemas.CaseNodeUpdate)
-async def copy_casenode(src_id: int, override: schemas.CaseNodeUpdate, dest_id: int = None, ignore_unknown_attr: bool = False, db: Session = Depends(get_db)):
-    if ignore_unknown_attr:
-        pass
-        # TODO: タイポなど誤った属性入力時にエラーとする
-
-    if hasattr(override, "id"):
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Can not allow to override id.".format(id, override.id))
-
-    with TrapDB():
-        result = crud.Casenode.duplicate(db, src_id=src_id, overrides=override.to_dict(), dest_id=dest_id)
-
-    return result
-
-
-
-
-@router.get("/target", response_model=List[schemas.TargetBase])
-async def list_target(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
-    with TrapDB():
-        results = crud.Target.list(
-            db=db, skip=skip, limit=limit
-        )
-
-    return results
-
-
-@router.get("/target/{id}", response_model=schemas.TargetBase)
-async def get_target(id: int, db: Session = Depends(get_db)):
-    with TrapDB():
-        result = crud.Target.get(db, id=id)
-
-    return result
-
-
-@router.post("/target", response_model=schemas.TargetBase)
-async def create_target(input: schemas.TargetCreate, db: Session = Depends(get_db)):
-    with TrapDB():
-        result = crud.Target.create(db, input=input)
-
-    return result
-
-@router.delete("/target/{id}", status_code=200)
-async def delete_target(id: int, db: Session = Depends(get_db)):
-    with TrapDB():
-        crud.Target.delete(db, id=id)
-
-
+    @router.post("/target/{id}/copy")
+    async def copy(self, id: int) -> schemas.Target:
+        return super().duplicate(id=id)

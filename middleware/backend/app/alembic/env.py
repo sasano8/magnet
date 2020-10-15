@@ -4,6 +4,7 @@ from sqlalchemy import engine_from_config
 from sqlalchemy import pool
 
 from alembic import context
+from magnet import SQLALCHEMY_DATABASE_URL, Base
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -13,9 +14,7 @@ config = context.config
 # This line sets up loggers basically.
 fileConfig(config.config_file_name)
 
-from magnet.config import SQLALCHEMY_DATABASE_URL
-from magnet.database import Base
-config.set_main_option("sqlalchemy.url", str(SQLALCHEMY_DATABASE_URL))
+config.set_main_option("sqlalchemy.url", SQLALCHEMY_DATABASE_URL)
 
 # add your model's MetaData object here
 # for 'autogenerate' support

@@ -3,45 +3,141 @@ from fastapi import (APIRouter, Depends, FastAPI, HTTPException, Query,
                      Security, status)
 from magnet.database import get_db
 from sqlalchemy.orm import Session
-from . import schemas, service
+from . import schemas, crud, impl
+from magnet import CommonQuery, default_query
+from magnet.vendors import cbv, InferringRouter, TemplateView
+from magnet.executor import worker
 
+JOBGROUP_ROOT_ID = 0
 router = APIRouter()
 
 
-@router.post("/job")
-async def create_job(input: schemas.JobCreate, db: Session = Depends(get_db)):
-    obj = service.create_job(db, input)
-    return obj
-
-@router.get("/queue", response_model=List[schemas.CommonSchema])
-async def list(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
-    return service.list(db, skip=skip, limit=limit)
+router = InferringRouter()
 
 
-@router.get("/queue/{id}", response_model=schemas.CommonSchema)
-async def get(id: int, db: Session = Depends(get_db)):
-    obj = service.get(db, id)
-    return obj
+def get_ingester_by_name(ingester_name: str):
+    if "postgres" == ingester_name:
+        return impl.Postgress
+    elif "elastic" == ingester_name:
+        raise NotImplementedError()
+    else:
+        raise KeyError()
 
 
-@router.post("/queue", response_model=schemas.CommonSchema)
-async def create(input: schemas.CommonSchema, db: Session = Depends(get_db)):
-    return service.create(db, input)
+@cbv(router)
+class IngesterJobGroupView(TemplateView[crud.IngesterJobGroup]):
+    db: Session = Depends(get_db)
+
+    @property
+    def rep(self) -> crud.IngesterJobGroup:
+        return super().rep
+
+    def get_or_create_jobgroup_root(self):
+        rep = self.rep
+        job_group = rep.get(id=JOBGROUP_ROOT_ID)
+
+        if job_group is None:
+            obj = schemas.JobGroupCreate(
+                id=JOBGROUP_ROOT_ID,
+                description="root",
+                is_system=True
+            )
+            job_group = rep.create(obj)
+
+        return job_group
 
 
-async def update(db: Session = Depends(get_db)):
-    raise NotImplementedError()
+@cbv(router)
+class IngesterJobView(TemplateView[crud.IngesterJob]):
+    db: Session = Depends(get_db)
+
+    @property
+    def rep(self) -> crud.IngesterJob:
+        return super().rep
+
+    @router.post("/job")
+    async def create(self, data: schemas.JobCreate) -> schemas.JobCreate:
+        db = self.db
+        r_job = self.rep
+        r_job_group = IngesterJobGroupView(db=db)
+
+        if data.jobgroup_id is None:
+            data.jobgroup_id = JOBGROUP_ROOT_ID
+
+        if data.jobgroup_id == JOBGROUP_ROOT_ID:
+            jobgroup = r_job_group.get_or_create_jobgroup_root()
+        else:
+            jobgroup = r_job_group.get(id=data.jobgroup_id)
+            if jobgroup is None:
+                raise HTTPException(status_code=404, detail="Not found a job group.")
+
+        dic = data.dict(exclude={"jobgroup_id"})
+        job = r_job.model(**dic)
+
+        job.parent_id = jobgroup.id
+        db.add(job)
+        db.commit()
+        db.refresh(job)
+        self.exec_job_by_id(job.id)
+        return job
+
+    async def exec_job_by_id(self, id: int):
+        """
+        キューにジョブを送出する。
+        """
+        rep = self.rep
+        job = rep.get(id=id)
+        if not job:
+            raise HTTPException(status_code=404, detail="not found id.")
+
+        payload = schemas.CommonSchema.from_orm(job)
+        payload = schemas.TaskCreate(**payload.dict())
+
+        try:
+            worker.exec_job.delay(job=payload)
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
 
 
-async def digest(id: int, db: Session = Depends(get_db)):
-    return service.digest(db, id=id, delete_on_complete=True)
+@cbv(router)
+class IngesterView(TemplateView[crud.Ingester]):
+    db: Session = Depends(get_db)
 
+    @property
+    def rep(self) -> crud.Ingester:
+        return super().rep
 
-@router.delete("/queue/{id}")
-async def delete(id: int, db: Session = Depends(get_db)):
-    return service.delete(db, id=id)
+    @router.get("/queue")
+    async def index(self, q: CommonQuery = default_query) -> List[schemas.CommonSchema]:
+        return super().index(skip=q.skip, limit=q.limit)
 
+    @router.post("/queue")
+    async def create(self, data: schemas.CommonSchema) -> schemas.CommonSchema:
+        return super().create(data=data)
 
-@router.delete("/queue/delete_all/")
-async def delete_all(db: Session = Depends(get_db)):
-    return service.delete_all(db)
+    @router.get("/queue/{id}")
+    async def get(self, id: int) -> schemas.CommonSchema:
+        return super().get(id=id)
+
+    @router.delete("/queue/{id}/delete", status_code=200)
+    async def delete(self, id: int) -> int:
+        return super().delete(id=id)
+
+    # @router.patch("/queue{id}/patch")
+    # async def patch(self, id: int, data: schemas.TradeProfile.transform("Patch", optionals=[...])) -> schemas.TradeProfile:
+    #     return super().patch(id=id, data=data)
+    #
+    # @router.post("/queue{id}/copy")
+    # async def copy(self, id: int) -> schemas.TradeProfile:
+    #     return super().duplicate(id=id)
+
+    @router.delete("/queue/delete_all", status_code=200)
+    async def delete_all(self) -> int:
+        return super().delete_all()
+
+    @router.post("/queue/{id}/digest", status_code=200)
+    async def digest(self, id: int) -> int:
+        """指定したキューを消化する"""
+        # return service.digest(db, id=id, delete_on_complete=True)
+        raise NotImplementedError()
+

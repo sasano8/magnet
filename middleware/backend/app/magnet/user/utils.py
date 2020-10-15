@@ -12,6 +12,15 @@ SECRET_KEY = Env.access_token.secret_key.get_secret_value()
 ALGORITHM = Env.access_token.algorithm
 ACCESS_TOKEN_EXPIRE_MINUTES = Env.access_token.expire_minutes
 
+from libs.fastapi import security
+authorizer = security.AccessToken(
+    token_url=TOKEN_URL,
+    secret_key=SECRET_KEY,
+    algorithm=ALGORITHM,
+    expire_minutes=ACCESS_TOKEN_EXPIRE_MINUTES,
+    scopes={"me": "Read information about the current user.", "items": "Read items."}
+)
+
 oauth2_schema = OAuth2PasswordBearer(
     tokenUrl=TOKEN_URL,
     scopes={"me": "Read information about the current user.", "items": "Read items."},

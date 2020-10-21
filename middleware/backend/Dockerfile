@@ -32,23 +32,17 @@ WORKDIR /app/
 
 COPY ./start.sh /start.sh
 RUN sudo chmod +x /start.sh
-# RUN sudo chown seluser:seluser /start.sh
 
 COPY ./gunicorn_conf.py /gunicorn_conf.py
-# RUN sudo chown seluser:seluser /gunicorn_conf.py
 
 COPY ./start-reload.sh /start-reload.sh
 RUN sudo chmod +x /start-reload.sh
-# RUN sudo chown seluser:seluser /start-reload.sh
 
 COPY ./start_celery_worker.sh /start_celery_worker.sh
 RUN sudo chmod +x /start_celery_worker.sh
 
 COPY ./app /app
 RUN ls -la
-# ONBUILD COPY ./app /app
-
-# RUN sudo chown -R seluser:seluser /app
 
 COPY ./supervisor/fastapi.conf /etc/supervisor/conf.d/
 COPY ./supervisor/celery_worker.conf /etc/supervisor/conf.d/
@@ -69,7 +63,7 @@ RUN sudo pip3 install --upgrade keyrings.alt
 
 # sudoをつけないと、poetryがグローバルインストールされているため権限エラーが発生する
 RUN sudo apt install -y graphviz libgraphviz-dev  # eralchemyのer出力にグラフライブラリが必要
-RUN sudo poetry update
+# RUN sudo poetry update
 RUN sudo poetry install
 
 

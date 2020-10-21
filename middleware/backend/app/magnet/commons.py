@@ -1,7 +1,7 @@
 from typing import Optional
 from fastapi import FastAPI, APIRouter, Depends, Query
 from pydantic import BaseModel, Field
-from typing import List, Union
+from typing import List, Union, Literal
 
 
 class BaseModel(BaseModel):
@@ -18,12 +18,12 @@ class BaseModel(BaseModel):
         )
 
     @classmethod
-    def transform(cls, suffix, exclude: tuple = (), requires: tuple = (), optionals: tuple = None):
+    def prefab(cls, suffix, exclude: tuple = (), requires: tuple = (), optionals: tuple = None):
         """
         出力するフィールドを制限し、指定されたフィールドの必須・オプション属性を更新した新しいスキーマクラスを生成する。
         optionals = None : フィールドのオプション属性を引き継ぐ
-        optionals = (...,) : 全てのフィールドをオプションにする。
-        optionals = ("field1") : 指定したフィールドをオプションにする
+        optionals = [...] : 全てのフィールドをオプションにする。
+        optionals = ["field1", "field2"] : 指定したフィールドをオプションにする
         """
         new_type = cls.new_type(suffix)
 
@@ -50,6 +50,17 @@ class BaseModel(BaseModel):
             new_type.__fields__[item].required = True
 
         return new_type
+
+
+class Condition(BaseModel):
+    field: str
+    op: Literal["==", "!="]
+    condition: str
+
+
+class ConditionOrAnd(BaseModel):
+    op: Literal["and", "or"]
+    conditions: List[Condition] = []
 
 
 class CommonQuery(BaseModel):

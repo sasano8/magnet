@@ -4,7 +4,7 @@ import sqlalchemy as sa
 
 class CryptoBase(Base):
     __tablename__ = "__crypto_ohlc_daily"
-    id = sa.Column(sa.Integer, primary_key=True, index=True)
+    id = sa.Column(sa.Integer, primary_key=True)
     provider = sa.Column(sa.String(255), nullable=False, default="")
     market = sa.Column(sa.String(255), nullable=False)
     product = sa.Column(sa.String(255), nullable=False)
@@ -24,16 +24,17 @@ class CryptoBase(Base):
     t_sma_25 = sa.Column(sa.Float, nullable=False, default=0)
     t_sma_30 = sa.Column(sa.Float, nullable=False, default=0)
     t_sma_200 = sa.Column(sa.Float, nullable=False, default=0)
-    t_cross = sa.Column(sa.Float, nullable=False, default=0)
+    t_cross = sa.Column(sa.Float, nullable=False, default=0, comment="1=golden cross -1=dead cross")
 
     __table_args__ = (
         sa.UniqueConstraint(provider, market, product, periods, close_time, name="uix_price"),
         sa.Index("uix_query", provider, market, product, periods),
+        {'comment': '外部データソースから取得したチャート'}
     )
 
 
 class WebArchiveBase:
-    id = sa.Column(sa.Integer, primary_key=True, index=True)
+    id = sa.Column(sa.Integer, primary_key=True)
     referer = sa.Column(sa.String(1023), nullable=True)
     url = sa.Column(sa.String(1023), nullable=True)
     url_cache = sa.Column(sa.String(1023), nullable=True)

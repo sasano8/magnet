@@ -4,7 +4,6 @@ from passlib.context import CryptContext
 from datetime import datetime, timedelta
 
 import jwt
-# from magnet import config
 from magnet.env import Env
 
 TOKEN_URL = Env.access_token.url

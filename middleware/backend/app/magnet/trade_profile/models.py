@@ -1,10 +1,10 @@
 from magnet import Base
 import sqlalchemy as sa
+from sqlalchemy.ext.declarative import declared_attr
 
 
-class TradeProfile(Base):
-    __tablename__ = "trade_profile"
-    id = sa.Column(sa.Integer, primary_key=True, index=True)
+class TradeProfileBase:
+    id = sa.Column(sa.Integer, primary_key=True)
     name = sa.Column(sa.String(255), nullable=False)
     description = sa.Column(sa.String(1024), nullable=False)
     provider = sa.Column(sa.String(255), nullable=False)
@@ -16,7 +16,21 @@ class TradeProfile(Base):
     order_id = sa.Column(sa.Float, nullable=True)
     trade_rule = sa.Column(sa.JSON, nullable=False, default={})
 
-    __table_args__ = (
-        sa.UniqueConstraint(name, name="uix_name"),
-    )
+    @declared_attr
+    def __table_args__(cls):
+        return (
+            sa.UniqueConstraint("name"),
+        )
+
+
+class TradeProfile(TradeProfileBase, Base):
+    __tablename__ = "trade_profile"
+
+
+
+class TradeJob(TradeProfileBase, Base):
+    __tablename__ = "trade_job"
+
+
+
 

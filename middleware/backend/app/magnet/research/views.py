@@ -34,7 +34,7 @@ class CaseNodeView(TemplateView[crud.Casenode]):
         return super().index(skip=q.skip, limit=q.limit)
 
     @router.post("/case")
-    async def create(self, data: schemas.CaseNode.transform("Create", exclude=["id"])) -> schemas.CaseNode:
+    async def create(self, data: schemas.CaseNode.prefab("Create", exclude=["id"])) -> schemas.CaseNode:
         return super().create(data=data)
 
     @router.get("/case/{id}")
@@ -46,7 +46,7 @@ class CaseNodeView(TemplateView[crud.Casenode]):
         return super().delete(id=id)
 
     @router.patch("/case/{id}/patch")
-    async def patch(self, id: int, data: schemas.CaseNode.transform("Patch", optionals=[...])) -> schemas.CaseNode:
+    async def patch(self, id: int, data: schemas.CaseNode.prefab("Patch", optionals=[...])) -> schemas.CaseNode:
         return super().patch(id=id, data=data)
 
     @router.post("/case/{id}/copy")
@@ -67,7 +67,7 @@ class TargetView(TemplateView[crud.Target]):
         return super().index(skip=q.skip, limit=q.limit)
 
     @router.post("/target")
-    async def create(self, data: schemas.Target.transform("Create", exclude=["id"])) -> schemas.Target:
+    async def create(self, data: schemas.Target.prefab("Create", exclude=["id"])) -> schemas.Target:
         return super().create(data=data)
 
     @router.get("/target/{id}")
@@ -79,7 +79,7 @@ class TargetView(TemplateView[crud.Target]):
         return super().delete(id=id)
 
     @router.patch("/target/{id}/patch")
-    async def patch(self, id: int, data: schemas.Target.transform("Patch", optionals=[...])) -> schemas.Target:
+    async def patch(self, id: int, data: schemas.Target.prefab("Patch", optionals=[...])) -> schemas.Target:
         return super().patch(data=data)
 
     @router.post("/target/{id}/copy")

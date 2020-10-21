@@ -766,6 +766,14 @@ class Linq(GenericModel, Iterable[T]):
             for func in args:
                 func(item)
 
+    # 処理実行
+    def each(self, *args: Iterable[Callable[[Any], Any]]) -> NoReturn:
+        """ファンクションに要素を送出します。ファンクションはいくつも渡すことができます。"""
+
+        for item in self:
+            for func in args:
+                func(item)
+
     def lazy(self):
         pass
         #
@@ -825,7 +833,7 @@ class Linq(GenericModel, Iterable[T]):
         obj = self.__class__(factory(self))
         return obj
 
-    def attach_source(self, iterable: Iterable[T]) -> 'Linq[T]':
+    def attach(self, iterable: Iterable[T]) -> 'Linq[T]':
         return self.__call__(iterable)
 
     def wrap_send_to(self, func):
@@ -979,16 +987,33 @@ class Operator(BaseModel):
         return Field(name=name)
 
 
-class LinqModelMetaclass(ModelMetaclass):
-    def __new__(mcs, name, bases, namespace, **kwargs):
-        cls = super().__new__(mcs, name, bases, namespace, **kwargs)
-        for field in cls.__fields__:
-            if hasattr(cls, field):
-                raise Exception("pydanticと重複している属性が存在します。")
-            setattr(cls, field, Field(name=field))
-        return cls
+class LinqEvent:
+    def __init__(self, on_success=None, on_error=None, on_complete=lambda: print("complete")):
+        self.observers = []
+        self.on_success = lambda: None if on_success is None else on_success
+        self.on_error = lambda: None if on_error is None else on_error
+        self.on_complete = on_complete
+        self.query == Linq.dummy()
 
+    def add_handler(self, observer):
+        self.observers.append(observer)
 
-class BaseModel(BaseModel, metaclass=LinqModelMetaclass):
-    pass
+    def occur(self, msg):
+        for observer in self.observers:
+            for item in observer(msg):
+                pass
+
+    def __call__(self, iterable):
+        query = self.query(iterable)
+        try:
+            for msg in query:
+                self.occur(msg)
+            self.on_success()
+        except Exception as e:
+            self.on_error(e)
+        finally:
+            self.on_complete()
+
+    def stream(self, iterable):
+        self.__call__(iterable)
 

@@ -21,6 +21,7 @@ importlib_metadata = "^1.7"
 uvicorn = "^0.11.5"
 gunicorn = "^20.0.4"
 fastapi = "^0.58.0"
+fastapi-utils = "^0.2.1"
 typer = "^0.2.1"
 pydantic = "^1.6.1"
 
@@ -70,12 +71,16 @@ datamodel-code-generator = "^0.5.32"
 pyjwt = "^1.7.1"
 passlib = {extras = ["bcrypt"], version = "^1.7.2"}
 pydotplus = "^2.0.2"
-fastapi-utils = "^0.2.1"
+jupyter = "^1.0.0"
+jupyter-contrib-nbextensions = "^0.5.1"
+matplotlib = "^3.3.2"
+streamlit = "^0.69.2"
 
 
 [tool.poetry.dev-dependencies]
 pytest = "^5.2"
 pytest-cov = "^2.9.0"
+pytest-asyncio = "^0.14.0"
 black = "^19.10b0"
 isort = "^4.3.21"
 

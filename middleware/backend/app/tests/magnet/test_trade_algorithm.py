@@ -2,10 +2,10 @@ import pytest
 from magnet.trade_profile import schemas
 
 @pytest.mark.parametrize("amount", [
-        schemas.RuleAmount(mode="fix", value=-1),
-        schemas.RuleAmount(mode="fix", value=-0.000001),
+        schemas.RuleAmount(mode="amount", value=-1),
+        schemas.RuleAmount(mode="amount", value=-0.000001),
 ])
-def test_amount_fix_invalid(amount):
+def test_amount_invalid(amount):
     entry = schemas.RulePosition(amount=amount)
 
     with pytest.raises(ValueError, match="Specify a value of 0 and more."):
@@ -13,12 +13,12 @@ def test_amount_fix_invalid(amount):
 
 
 @pytest.mark.parametrize("amount", [
-    schemas.RuleAmount(mode="fix", value=0),
-    schemas.RuleAmount(mode="fix", value=0.000001),
-    schemas.RuleAmount(mode="fix", value=1),
-    schemas.RuleAmount(mode="fix", value=1.000001),
+    schemas.RuleAmount(mode="amount", value=0),
+    schemas.RuleAmount(mode="amount", value=0.000001),
+    schemas.RuleAmount(mode="amount", value=1),
+    schemas.RuleAmount(mode="amount", value=1.000001),
 ])
-def test_amount_fix_valid(amount):
+def test_amount_valid(amount):
     entry = schemas.RulePosition(amount=amount)
     obj = schemas.RuleTrade(entry=entry)
 

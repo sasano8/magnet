@@ -5,7 +5,7 @@ from magnet.database import Base
 
 class Executor(Base):
     __tablename__ = "executor"
-    id = Column(Integer, primary_key=True, index=True)
+    id = Column(Integer, primary_key=True)
     is_system = Column(Boolean, nullable=False, default=False)
     # executor_id = Column(String, nullable=False)
     # pipeline_id = Column(Integer, nullable=False)
@@ -17,7 +17,7 @@ class Executor(Base):
 
 class ExecutorJob(Base):
     __tablename__ = "executor_job"
-    id = Column(Integer, primary_key=True, index=True)
+    id = Column(Integer, primary_key=True)
     pipeline = Column(String(255), nullable=True)
     crawler_name = Column(String(255), nullable=True)
     keyword = Column(String(255), nullable=True)

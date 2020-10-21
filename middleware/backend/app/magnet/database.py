@@ -26,13 +26,24 @@ def get_db() -> Iterable[Session]:
         yield db
         # db.commit()
     finally:
-        # In case of uncommit, it will be rolled back implicitly
         # noinspection PyBroadException
         try:
+            # In case of uncommit, it will be rolled back implicitly
             db.close()
         except Exception as e:
             logger.critical(exc_info=True)
 
 
+# class Base:
+#     @declared_attr
+#     def __tablename__(cls):
+#         return cls.__name__.lower()
+#
+#     # __table_args__ = {'mysql_engine': 'InnoDB'}
+#
+#     id = Column(Integer, primary_key=True)
+#
+#
+# Base = declarative_base(cls=Base)
 Base = declarative_base()
 

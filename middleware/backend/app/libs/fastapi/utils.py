@@ -1,6 +1,6 @@
 from enum import Enum
 from typing import Generic, TypeVar, Type, Any, Tuple, Iterable, Union, List, Literal
-from pydantic import BaseModel, PydanticValueError, validator, ValidationError
+from pydantic import BaseModel, PydanticValueError, validator, ValidationError, validate_arguments
 from pydantic.generics import GenericModel
 from sqlalchemy.orm import Query, Session
 from sqlalchemy.sql.schema import Column
@@ -63,6 +63,20 @@ class ExcBuilder:
             status_code=self.status_code,
             detail=self.errors
         )
+
+
+@validate_arguments
+def build_exception(
+    loc: tuple,
+    msg: str,
+    # type_: str,
+    status_code: int = status.HTTP_422_UNPROCESSABLE_ENTITY,
+) -> HTTPException:
+    return HTTPException(
+        status_code=status_code,
+        # detail=[{"loc": loc, "msg": msg, "type": type_}]
+        detail=[{"loc": loc, "msg": msg}]
+    )
 
 
 class GenericRepository(Generic[Alchemy]):

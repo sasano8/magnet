@@ -86,7 +86,7 @@ class UserAccessToken(EnvBase):
     class Config:
         env_prefix = "ACCESSTOKEN_"
 
-    url: str = Field("/users/token", const=True)
+    url: str = Field("/users/guest/login", const=True)
     secret_key: SecretStr
     algorithm: str = "HS256"
     expire_minutes: int = 30

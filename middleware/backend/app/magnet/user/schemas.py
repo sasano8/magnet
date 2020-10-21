@@ -1,7 +1,6 @@
 from typing import List, Optional
-
 from magnet import BaseModel
-
+from pydantic import SecretStr
 
 class ORM:
     orm_mode = True
@@ -28,7 +27,7 @@ class Item(BaseModel):
 
 class UserCreate(BaseModel):
     email: str
-    password: str
+    password: SecretStr
 
 
 class User(BaseModel):

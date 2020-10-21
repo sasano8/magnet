@@ -155,7 +155,6 @@ async def exec_bitflyer(profile: schemas.ProfilePrimitive):
 from magnet.database import get_db
 
 
-
 async def load_ohlc_by_laundering(market: str = "bitfllyer", product: str = "bitcjpy", periods: int = 60 * 60 * 24, after: datetime.datetime = datetime.datetime(2010, 1, 1), db=Depends(get_db)):
     """指定したリソースの４本値を洗い替えする"""
 

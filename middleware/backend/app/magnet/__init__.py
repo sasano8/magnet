@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Depends
+from fastapi import FastAPI, Depends, HTTPException
 from sqlalchemy.orm import Session
 from libs.fastapi import import_modules
 from libs.linq import Linq
@@ -19,5 +19,7 @@ import_modules(__file__, ["models.py"])
 # import_modules(__file__, ["crud.py"])
 # import_modules(__file__, ["service.py"])  # viewsはserviceに統合する
 # import_modules(__file__, ["views.py"])
-# import_modules(__file__, ["worker.py"])
-import_modules(__file__, ["events.py"])
+# import_modules(__file__, ["worker.py"])  # workerを登録しないとrabbitmqのjobが失敗する
+import_modules(__file__, ["events.py"])  # fastapiにイベントを登録する
+
+

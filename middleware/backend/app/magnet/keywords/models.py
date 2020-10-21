@@ -4,7 +4,7 @@ from magnet.database import Base
 
 class Keywords(Base):
     __tablename__ = "keywords"
-    id = Column(Integer, primary_key=True, index=True)
+    id = Column(Integer, primary_key=True)
     category_name = Column(String, unique=True, index=True)
     tag  = Column(String, index=True)
     keywords: Column(JSON, nullable=False, default=[])

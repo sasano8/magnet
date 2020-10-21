@@ -12,6 +12,7 @@
 
 # awasome python packages
 
+- [python cheet sheet](https://github.com/crazyguitar/pysheeet/blob/master/docs/notes/python-sqlalchemy.rst)
 - [tree構造とかのライブラリ?](https://github.com/dahlia/awesome-sqlalchemy)
 - [html本文を抽出 1.5万](https://github.com/buriy/python-readability)
 - [htmlをオブジェクト化自然言語処理 1.5万](https://github.com/codelucas/newspaper)
@@ -88,4 +89,5 @@ python3 -m cli db migrate
 ボリュームとはあまり因果関係がないように見える。
 最大の利益が取れないアルゴリズムのため、利確タイミングを改善するだけで大きく成果を上げられそうだ。
 大きく利幅を取った後は、負けることが多い。（利幅1.4％目安）
+
 

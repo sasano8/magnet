@@ -1,28 +1,40 @@
-from typing import List, Optional
-from fastapi import (APIRouter, Depends, FastAPI, HTTPException, Query,
-                     Security, status)
-from magnet.database import get_db
-from sqlalchemy.orm import Session
+from typing import List
 from libs import generator
-from fastapi.responses import PlainTextResponse
-import ast
-import json
+from fastapi.responses import PlainTextResponse, HTMLResponse
 import hjson
+from magnet import get_db, Session, default_query, CommonQuery, Depends
+from magnet.vendors import cbv, InferringRouter, TemplateView
 
-router = APIRouter()
 
-@router.post("/json_to_pydantic", response_class=PlainTextResponse)
-async def json_to_pydantic(json: str = "{}"):
-    dic = hjson.loads(json)
+router = InferringRouter()
 
-    model_name = "Dummy"
-    code = generator.dump_pydantic_code_from_json(
-        __model_name=model_name,
-        data=dic,
-        indent=4,
-        require_default=False,
-        set_default_from_json=False
-    )
-    return code
 
+@cbv(router)
+class TradeProfileView:
+
+    @router.post("/test_request", response_class=HTMLResponse)
+    def test_request(self):
+        import requests
+        res = requests.get("https://example.com/")
+        return res.text
+
+    @router.post("/pytest", response_class=PlainTextResponse)
+    def exec_pytest(self):
+        from main import exec_pytest
+        result = exec_pytest()
+        return result
+
+    @router.post("/json_to_pydantic", response_class=PlainTextResponse)
+    async def json_to_pydantic(self, json: str = "{}"):
+        dic = hjson.loads(json)
+
+        model_name = "Dummy"
+        code = generator.dump_pydantic_code_from_json(
+            __model_name=model_name,
+            data=dic,
+            indent=4,
+            require_default=False,
+            set_default_from_json=False
+        )
+        return code
 

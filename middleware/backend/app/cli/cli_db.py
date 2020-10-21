@@ -54,10 +54,13 @@ def migrate():
 
 
 @app.command()
-def output_er():
+def output_design():
     import eralchemy
     from magnet import Base
     eralchemy.render_er(Base, "er.png")
+    markdown = get_table_define_as_markdown(Base)
+    with open("tables.md", mode='w') as f:
+        f.write(markdown)
 
 
 def dump():
@@ -66,3 +69,94 @@ def dump():
 
 def load():
     pass
+
+
+def get_table_define_as_markdown(base):
+    tables = [x for x in base.metadata.tables.values()]
+    arr = []
+
+    for table in tables:
+        """
+        'key', 
+        'name',
+        'table',
+        'type',
+        'is_literal',
+        'primary_key',
+        'nullable',
+        'default',
+        'server_default',
+        'server_onupdate',
+        'index',
+        'unique',
+        'system',
+        'doc',
+        'onupdate',
+        'autoincrement',
+        'constraints',
+        'foreign_keys',
+        'comment',
+        'computed',
+        '_creation_order',
+        'dispatch',
+        'proxy_set',
+        'description',
+        'comparator',
+        '_cloned_set',
+        '_from_objects',
+        '_label',
+        '_key_label',
+        '_render_label_in_columns_clause'
+        """
+
+        arr.append("## " + table.name)
+        if table.comment:
+            arr.append(table.comment)
+            arr.append("")
+        arr.append("| name | type | pk | nullable | default | unique | index | comment |")
+        arr.append("| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |")
+        for column in table._columns.values():
+
+            dic = create_column_info_as_dict(
+                name=column.name,
+                type=column.type,
+                pk=column.primary_key,
+                nullable=column.nullable,
+                default=column.default,
+                unique=column.unique,
+                index=column.index,
+                comment=column.comment,
+            )
+
+            s = "| {name} | {type} | {pk} | {nullable} | {default} | {unique} | {index} | {comment} |".format(**dic)
+            arr.append(s)
+
+        arr.append("")
+
+    return "\n".join(arr)
+
+
+def create_column_info_as_dict(name, type, pk, nullable, default, unique, index, comment):
+    def get_value_or_empty(value):
+        if value is None:
+            return ""
+        else:
+            return value
+
+    try:
+        type = str(type)
+    except:
+        # JSONカラムの場合、なぜか文字列化できない。それ以外のカラムで、発生するかは知らん。
+        type = "多分JSON"
+
+    # 設計書にNoneが表示されるのが煩わしいため空文字にする
+    return dict(
+        name=get_value_or_empty(name),
+        type=get_value_or_empty(type),
+        pk=pk if pk else "",
+        nullable=nullable if nullable else "",
+        default=get_value_or_empty(default),
+        unique=unique if unique else "",
+        index=index if index else "",
+        comment=get_value_or_empty(comment),
+    )

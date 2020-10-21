@@ -69,3 +69,6 @@ class TradeProfile(BaseModel):
     order_id: float = None
     trade_rule: RuleTrade
 
+
+TradeProfileCreate = TradeProfile.prefab("Create", exclude=["id"])
+TradeProfilePatch = TradeProfile.prefab("Patch", optionals=[...])

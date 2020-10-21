@@ -292,30 +292,11 @@ def test_linq():
     # assert all([a == b for a, b in itertools.zip_longest(list(query), [1, 3, 6])])
 
 
-def test_operator():
-    class Person(BaseModel):
-        name: str
-        age: int
-
-    bob = Person(name="bob", age=20)
-    mary = Person(name="mary", age=30)
-
-    source = [bob, mary]
-
-    query = Linq(source).filter(Person.name == "bob")
-    assert query.compare([bob]).all()
-
-    query = Linq(source).filter(Person.name != "bob")
-    assert query.compare([mary]).all()
-
-
 def test_iterator():
 
     def iterate():
-        print("consume start.")
         yield 1
         yield 2
-        print("consume end.")
 
     it = iterate()
     query_1 = Linq(it)

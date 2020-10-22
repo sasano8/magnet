@@ -122,11 +122,14 @@ class TradeJobView(TemplateView[crud.TradeJob]):
 
         """
         過去データを読み込む
+        現在の株価を
         分析する
         サインを検出する
         サインを分析し売買を行う
         注文を保持する
         """
+
+        import  sqlalchemy.sql.schema
 
 
         return p

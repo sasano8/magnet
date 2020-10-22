@@ -5,7 +5,7 @@ from magnet.database import Base
 
 class IngesterJobGroup(Base):
     __tablename__ = "ingester_jobgroup"
-    id = Column(Integer, primary_key=True, index=True)
+    id = Column(Integer, primary_key=True)
     is_system = Column(Boolean, nullable=False, default=False)
     description = Column(String(1023), nullable=False, default="")
     target_id = Column(Integer, nullable=True)
@@ -14,7 +14,7 @@ class IngesterJobGroup(Base):
 
 class IngesterJob(Base):
     __tablename__ = "ingester_job"
-    id = Column(Integer, primary_key=True, index=True)
+    id = Column(Integer, primary_key=True)
     parent_id = Column(Integer, ForeignKey('ingester_jobgroup.id'))
     description = Column(String(1023), nullable=False, default="")
     pipeline_name = Column(String(255), nullable=True)
@@ -27,7 +27,7 @@ class IngesterJob(Base):
 
 class Ingester(Base):
     __tablename__ = "ingester"
-    id = Column(Integer, primary_key=True, index=True)
+    id = Column(Integer, primary_key=True)
     parent_id = Column(Integer, ForeignKey('ingester_job.id'))
     pipeline_name = Column(String(255), nullable=True)
     crawler_name = Column(String(255), nullable=True)

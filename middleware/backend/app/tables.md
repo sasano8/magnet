@@ -1,73 +1,73 @@
 ## case_node
-| name | type | pk | nullable | default | unique | index | comment |
+| name | type | pk | unique | index | nullable | default | comment |
 | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| id | INTEGER | True |  |  |  |  |  |
+| id | INTEGER | x |  |  |  |  |  |
 | name | VARCHAR(255) |  |  |  |  |  |  |
-| is_system | BOOLEAN |  |  | ColumnDefault(False) |  |  |  |
+| is_system | BOOLEAN |  |  |  |  | False |  |
 | description | VARCHAR(255) |  |  |  |  |  |  |
 
 ## target
-| name | type | pk | nullable | default | unique | index | comment |
+| name | type | pk | unique | index | nullable | default | comment |
 | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| id | INTEGER | True |  |  |  |  |  |
+| id | INTEGER | x |  |  |  |  |  |
 | name | VARCHAR(255) |  |  |  |  |  |  |
-| node_id | INTEGER |  | True |  |  |  |  |
+| node_id | INTEGER |  |  |  | x |  |  |
 
 ## users
-| name | type | pk | nullable | default | unique | index | comment |
+| name | type | pk | unique | index | nullable | default | comment |
 | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| id | INTEGER | True |  |  |  | True |  |
-| username | VARCHAR |  | True |  | True | True |  |
-| hashed_password | VARCHAR |  | True |  |  |  |  |
-| email | VARCHAR |  | True |  | True | True |  |
-| full_name | VARCHAR |  | True |  |  |  |  |
-| disabled | BOOLEAN |  | True | ColumnDefault(False) |  |  |  |
-| is_active | BOOLEAN |  | True | ColumnDefault(True) |  |  |  |
-| is_test | BOOLEAN |  | True | ColumnDefault(True) |  |  |  |
+| id | INTEGER | x |  |  |  |  |  |
+| username | VARCHAR |  | x | x | x |  |  |
+| hashed_password | VARCHAR |  |  |  | x |  |  |
+| email | VARCHAR |  | x | x | x |  |  |
+| full_name | VARCHAR |  |  |  | x |  |  |
+| disabled | BOOLEAN |  |  |  | x | False |  |
+| is_active | BOOLEAN |  |  |  | x | True |  |
+| is_test | BOOLEAN |  |  |  | x | True |  |
 
 ## items
-| name | type | pk | nullable | default | unique | index | comment |
+| name | type | pk | unique | index | nullable | default | comment |
 | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| id | INTEGER | True |  |  |  | True |  |
-| title | VARCHAR |  | True |  |  | True |  |
-| description | VARCHAR |  | True |  |  | True |  |
-| owner_id | INTEGER |  | True |  |  |  |  |
+| id | INTEGER | x |  |  |  |  |  |
+| title | VARCHAR |  |  | x | x |  |  |
+| description | VARCHAR |  |  | x | x |  |  |
+| owner_id | INTEGER |  |  |  | x |  |  |
 
 ## keywords
-| name | type | pk | nullable | default | unique | index | comment |
+| name | type | pk | unique | index | nullable | default | comment |
 | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| id | INTEGER | True |  |  |  |  |  |
-| category_name | VARCHAR |  | True |  | True | True |  |
-| tag | VARCHAR |  | True |  |  | True |  |
-| max_size | INTEGER |  | True |  |  |  |  |
+| id | INTEGER | x |  |  |  |  |  |
+| category_name | VARCHAR |  | x | x | x |  |  |
+| tag | VARCHAR |  |  | x | x |  |  |
+| max_size | INTEGER |  |  |  | x |  |  |
 
 ## executor
-| name | type | pk | nullable | default | unique | index | comment |
+| name | type | pk | unique | index | nullable | default | comment |
 | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| id | INTEGER | True |  |  |  |  |  |
-| is_system | BOOLEAN |  |  | ColumnDefault(False) |  |  |  |
-| name | VARCHAR |  | True | ColumnDefault('') |  |  |  |
-| description | VARCHAR |  |  | ColumnDefault('') |  |  |  |
-| executor_name | VARCHAR |  |  | ColumnDefault('') |  |  |  |
-| pipeline_name | VARCHAR |  |  | ColumnDefault('') |  |  |  |
+| id | INTEGER | x |  |  |  |  |  |
+| is_system | BOOLEAN |  |  |  |  | False |  |
+| name | VARCHAR |  |  |  | x | "" |  |
+| description | VARCHAR |  |  |  |  | "" |  |
+| executor_name | VARCHAR |  |  |  |  | "" |  |
+| pipeline_name | VARCHAR |  |  |  |  | "" |  |
 
 ## executor_job
-| name | type | pk | nullable | default | unique | index | comment |
+| name | type | pk | unique | index | nullable | default | comment |
 | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| id | INTEGER | True |  |  |  |  |  |
-| pipeline | VARCHAR(255) |  | True |  |  |  |  |
-| crawler_name | VARCHAR(255) |  | True |  |  |  |  |
-| keyword | VARCHAR(255) |  | True |  |  |  |  |
-| option_keywords | 多分JSON |  |  | ColumnDefault([]) |  |  |  |
-| deps | INTEGER |  |  | ColumnDefault(-1) |  |  |  |
+| id | INTEGER | x |  |  |  |  |  |
+| pipeline | VARCHAR(255) |  |  |  | x |  |  |
+| crawler_name | VARCHAR(255) |  |  |  | x |  |  |
+| keyword | VARCHAR(255) |  |  |  | x |  |  |
+| option_keywords | JSON |  |  |  |  | [] |  |
+| deps | INTEGER |  |  |  |  | -1 |  |
 
 ## __crypto_ohlc_daily
 外部データソースから取得したチャート
 
-| name | type | pk | nullable | default | unique | index | comment |
+| name | type | pk | unique | index | nullable | default | comment |
 | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| id | INTEGER | True |  |  |  |  |  |
-| provider | VARCHAR(255) |  |  | ColumnDefault('') |  |  |  |
+| id | INTEGER | x |  |  |  |  |  |
+| provider | VARCHAR(255) |  |  |  |  | "" |  |
 | market | VARCHAR(255) |  |  |  |  |  |  |
 | product | VARCHAR(255) |  |  |  |  |  |  |
 | periods | INTEGER |  |  |  |  |  |  |
@@ -78,31 +78,31 @@
 | close_price | FLOAT |  |  |  |  |  |  |
 | volume | FLOAT |  |  |  |  |  |  |
 | quote_volume | FLOAT |  |  |  |  |  |  |
-| t_sma_5 | FLOAT |  |  | ColumnDefault(0) |  |  |  |
-| t_sma_10 | FLOAT |  |  | ColumnDefault(0) |  |  |  |
-| t_sma_15 | FLOAT |  |  | ColumnDefault(0) |  |  |  |
-| t_sma_20 | FLOAT |  |  | ColumnDefault(0) |  |  |  |
-| t_sma_25 | FLOAT |  |  | ColumnDefault(0) |  |  |  |
-| t_sma_30 | FLOAT |  |  | ColumnDefault(0) |  |  |  |
-| t_sma_200 | FLOAT |  |  | ColumnDefault(0) |  |  |  |
-| t_cross | FLOAT |  |  | ColumnDefault(0) |  |  | 1=golden cross -1=dead cross |
+| t_sma_5 | FLOAT |  |  |  |  | 0 |  |
+| t_sma_10 | FLOAT |  |  |  |  | 0 |  |
+| t_sma_15 | FLOAT |  |  |  |  | 0 |  |
+| t_sma_20 | FLOAT |  |  |  |  | 0 |  |
+| t_sma_25 | FLOAT |  |  |  |  | 0 |  |
+| t_sma_30 | FLOAT |  |  |  |  | 0 |  |
+| t_sma_200 | FLOAT |  |  |  |  | 0 |  |
+| t_cross | INTEGER |  |  |  |  | 0 | 1=golden cross -1=dead cross |
 
 ## __topic
-| name | type | pk | nullable | default | unique | index | comment |
+| name | type | pk | unique | index | nullable | default | comment |
 | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| id | INTEGER | True |  |  |  |  |  |
-| referer | VARCHAR(1023) |  | True |  |  |  |  |
-| url | VARCHAR(1023) |  | True |  |  |  |  |
-| url_cache | VARCHAR(1023) |  | True |  |  |  |  |
-| title | VARCHAR(1023) |  | True | ColumnDefault('') |  |  |  |
-| summary | VARCHAR(1023) |  | True | ColumnDefault('') |  |  |  |
-| memo | VARCHAR(1023) |  |  | ColumnDefault('') |  |  |  |
-| detail | 多分JSON |  |  | ColumnDefault({}) |  |  |  |
+| id | INTEGER | x |  |  |  |  |  |
+| referer | VARCHAR(1023) |  |  |  | x |  |  |
+| url | VARCHAR(1023) |  |  |  | x |  |  |
+| url_cache | VARCHAR(1023) |  |  |  | x |  |  |
+| title | VARCHAR(1023) |  |  |  | x | "" |  |
+| summary | VARCHAR(1023) |  |  |  | x | "" |  |
+| memo | VARCHAR(1023) |  |  |  |  | "" |  |
+| detail | JSON |  |  |  |  | {} |  |
 
 ## trade_profile
-| name | type | pk | nullable | default | unique | index | comment |
+| name | type | pk | unique | index | nullable | default | comment |
 | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| id | INTEGER | True |  |  |  |  |  |
+| id | INTEGER | x |  |  |  |  |  |
 | name | VARCHAR(255) |  |  |  |  |  |  |
 | description | VARCHAR(1024) |  |  |  |  |  |  |
 | provider | VARCHAR(255) |  |  |  |  |  |  |
@@ -111,13 +111,13 @@
 | periods | INTEGER |  |  |  |  |  |  |
 | cron | VARCHAR(255) |  |  |  |  |  |  |
 | broker | VARCHAR(255) |  |  |  |  |  |  |
-| order_id | FLOAT |  | True |  |  |  |  |
-| trade_rule | 多分JSON |  |  | ColumnDefault({}) |  |  |  |
+| order_id | FLOAT |  |  |  | x |  |  |
+| trade_rule | JSON |  |  |  |  | {} |  |
 
 ## trade_job
-| name | type | pk | nullable | default | unique | index | comment |
+| name | type | pk | unique | index | nullable | default | comment |
 | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| id | INTEGER | True |  |  |  |  |  |
+| id | INTEGER | x |  |  |  |  |  |
 | name | VARCHAR(255) |  |  |  |  |  |  |
 | description | VARCHAR(1024) |  |  |  |  |  |  |
 | provider | VARCHAR(255) |  |  |  |  |  |  |
@@ -126,43 +126,43 @@
 | periods | INTEGER |  |  |  |  |  |  |
 | cron | VARCHAR(255) |  |  |  |  |  |  |
 | broker | VARCHAR(255) |  |  |  |  |  |  |
-| order_id | FLOAT |  | True |  |  |  |  |
-| trade_rule | 多分JSON |  |  | ColumnDefault({}) |  |  |  |
+| order_id | FLOAT |  |  |  | x |  |  |
+| trade_rule | JSON |  |  |  |  | {} |  |
 
 ## ingester_jobgroup
-| name | type | pk | nullable | default | unique | index | comment |
+| name | type | pk | unique | index | nullable | default | comment |
 | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| id | INTEGER | True |  |  |  | True |  |
-| is_system | BOOLEAN |  |  | ColumnDefault(False) |  |  |  |
-| description | VARCHAR(1023) |  |  | ColumnDefault('') |  |  |  |
-| target_id | INTEGER |  | True |  |  |  |  |
+| id | INTEGER | x |  |  |  |  |  |
+| is_system | BOOLEAN |  |  |  |  | False |  |
+| description | VARCHAR(1023) |  |  |  |  | "" |  |
+| target_id | INTEGER |  |  |  | x |  |  |
 
 ## ingester_job
-| name | type | pk | nullable | default | unique | index | comment |
+| name | type | pk | unique | index | nullable | default | comment |
 | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| id | INTEGER | True |  |  |  | True |  |
-| parent_id | INTEGER |  | True |  |  |  |  |
-| description | VARCHAR(1023) |  |  | ColumnDefault('') |  |  |  |
-| pipeline_name | VARCHAR(255) |  | True |  |  |  |  |
-| crawler_name | VARCHAR(255) |  | True |  |  |  |  |
-| keyword | VARCHAR(255) |  | True |  |  |  |  |
-| option_keywords | 多分JSON |  |  | ColumnDefault([]) |  |  |  |
-| deps | INTEGER |  |  | ColumnDefault(-1) |  |  |  |
+| id | INTEGER | x |  |  |  |  |  |
+| parent_id | INTEGER |  |  |  | x |  |  |
+| description | VARCHAR(1023) |  |  |  |  | "" |  |
+| pipeline_name | VARCHAR(255) |  |  |  | x |  |  |
+| crawler_name | VARCHAR(255) |  |  |  | x |  |  |
+| keyword | VARCHAR(255) |  |  |  | x |  |  |
+| option_keywords | JSON |  |  |  |  | [] |  |
+| deps | INTEGER |  |  |  |  | -1 |  |
 
 ## ingester
-| name | type | pk | nullable | default | unique | index | comment |
+| name | type | pk | unique | index | nullable | default | comment |
 | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| id | INTEGER | True |  |  |  | True |  |
-| parent_id | INTEGER |  | True |  |  |  |  |
-| pipeline_name | VARCHAR(255) |  | True |  |  |  |  |
-| crawler_name | VARCHAR(255) |  | True |  |  |  |  |
-| keyword | VARCHAR(255) |  | True |  |  |  |  |
-| option_keywords | 多分JSON |  |  | ColumnDefault([]) |  |  |  |
-| deps | INTEGER |  |  | ColumnDefault(-1) |  |  |  |
-| referer | VARCHAR(1023) |  | True |  |  |  |  |
-| url | VARCHAR(1023) |  | True |  |  |  |  |
-| url_cache | VARCHAR(1023) |  | True |  |  |  |  |
-| title | VARCHAR(1023) |  | True | ColumnDefault('') |  |  |  |
-| summary | VARCHAR(1023) |  | True | ColumnDefault('') |  |  |  |
-| current_page_num | INTEGER |  |  | ColumnDefault(-1) |  |  |  |
-| detail | 多分JSON |  |  | ColumnDefault({}) |  |  |  |
+| id | INTEGER | x |  |  |  |  |  |
+| parent_id | INTEGER |  |  |  | x |  |  |
+| pipeline_name | VARCHAR(255) |  |  |  | x |  |  |
+| crawler_name | VARCHAR(255) |  |  |  | x |  |  |
+| keyword | VARCHAR(255) |  |  |  | x |  |  |
+| option_keywords | JSON |  |  |  |  | [] |  |
+| deps | INTEGER |  |  |  |  | -1 |  |
+| referer | VARCHAR(1023) |  |  |  | x |  |  |
+| url | VARCHAR(1023) |  |  |  | x |  |  |
+| url_cache | VARCHAR(1023) |  |  |  | x |  |  |
+| title | VARCHAR(1023) |  |  |  | x | "" |  |
+| summary | VARCHAR(1023) |  |  |  | x | "" |  |
+| current_page_num | INTEGER |  |  |  |  | -1 |  |
+| detail | JSON |  |  |  |  | {} |  |

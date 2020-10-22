@@ -113,22 +113,22 @@ def get_table_define_as_markdown(base):
         if table.comment:
             arr.append(table.comment)
             arr.append("")
-        arr.append("| name | type | pk | nullable | default | unique | index | comment |")
+        arr.append("| name | type | pk | unique | index | nullable | default | comment |")
         arr.append("| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |")
         for column in table._columns.values():
 
             dic = create_column_info_as_dict(
                 name=column.name,
-                type=column.type,
+                type_=column.type,
                 pk=column.primary_key,
-                nullable=column.nullable,
-                default=column.default,
                 unique=column.unique,
                 index=column.index,
+                nullable=column.nullable,
+                default=column.default,
                 comment=column.comment,
             )
 
-            s = "| {name} | {type} | {pk} | {nullable} | {default} | {unique} | {index} | {comment} |".format(**dic)
+            s = "| {name} | {type} | {pk} | {unique} | {index} | {nullable} | {default} | {comment} |".format(**dic)
             arr.append(s)
 
         arr.append("")
@@ -136,27 +136,33 @@ def get_table_define_as_markdown(base):
     return "\n".join(arr)
 
 
-def create_column_info_as_dict(name, type, pk, nullable, default, unique, index, comment):
+def create_column_info_as_dict(name, type_, pk, unique, index, nullable, default, comment):
     def get_value_or_empty(value):
         if value is None:
             return ""
         else:
             return value
 
+    def get_str_or_ohter(value):
+        if isinstance(value, str) and value == "":
+            return "\"\""
+
+        return value
+
     try:
-        type = str(type)
+        type_ = str(type_)
     except:
         # JSONカラムの場合、なぜか文字列化できない。それ以外のカラムで、発生するかは知らん。
-        type = "多分JSON"
+        type_ = type(type_).__name__
 
     # 設計書にNoneが表示されるのが煩わしいため空文字にする
     return dict(
         name=get_value_or_empty(name),
-        type=get_value_or_empty(type),
-        pk=pk if pk else "",
-        nullable=nullable if nullable else "",
-        default=get_value_or_empty(default),
-        unique=unique if unique else "",
-        index=index if index else "",
+        type=get_value_or_empty(type_),
+        pk="x" if pk else "",
+        unique="x" if unique else "",
+        index="x" if index else "",
+        nullable="x" if nullable else "",
+        default=get_str_or_ohter(default.arg) if default else "",
         comment=get_value_or_empty(comment),
     )

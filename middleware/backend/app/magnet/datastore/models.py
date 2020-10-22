@@ -24,7 +24,7 @@ class CryptoBase(Base):
     t_sma_25 = sa.Column(sa.Float, nullable=False, default=0)
     t_sma_30 = sa.Column(sa.Float, nullable=False, default=0)
     t_sma_200 = sa.Column(sa.Float, nullable=False, default=0)
-    t_cross = sa.Column(sa.Float, nullable=False, default=0, comment="1=golden cross -1=dead cross")
+    t_cross = sa.Column(sa.Integer, nullable=False, default=0, comment="1=golden cross -1=dead cross")
 
     __table_args__ = (
         sa.UniqueConstraint(provider, market, product, periods, close_time, name="uix_price"),

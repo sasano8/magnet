@@ -5,8 +5,8 @@ from fastapi.security import (OAuth2PasswordRequestForm,
 from jwt import PyJWTError
 from pydantic import ValidationError
 from .utils import get_password_hash, verify_password, encode_access_token, decode_access_token, oauth2_schema
-from magnet import get_db, TemplateView, CommonQuery, default_query, Session, Linq
-from magnet.vendors import cbv, InferringRouter
+from magnet import get_db, TemplateView, PagenationQuery, Session, Linq
+from magnet.vendors import cbv, InferringRouter, fastapi_funnel
 from magnet.user import crud, models, schemas
 
 
@@ -41,14 +41,6 @@ async def get_current_user(
         raise credentials_exception
 
     # 要求に必要な権限を保持しているか
-    # if Linq(security_scopes.scopes).filter(lambda x: x not in token_data.scopes).len() > 0:
-    # if not Linq(security_scopes.scopes).contains(*token_data.scopes).all():
-    #     raise HTTPException(
-    #         status_code=status.HTTP_401_UNAUTHORIZED,
-    #         detail="Not enough permissions.",
-    #         headers={"WWW-Authenticate": authenticate_value},
-    #     )
-    #arr = [x for x in security_scopes.scopes if x not in token_data.scopes]
     for scope in security_scopes.scopes:
         if scope not in token_data.scopes:
             raise HTTPException(
@@ -132,7 +124,8 @@ class UserView(TemplateView[crud.User]):
         return super().rep
 
     @router.get("/")
-    async def index(self, q: CommonQuery = default_query) -> List[schemas.User]:
+    @fastapi_funnel
+    async def index(self, q: PagenationQuery) -> List[schemas.User]:
         return super().index(skip=q.skip, limit=q.limit)
 
     # @router.get("/{id}")
@@ -183,6 +176,7 @@ class UserItemView(TemplateView[crud.Item]):
         return super().rep
 
     @router.get("/items")
-    async def index(self, q: CommonQuery = default_query) -> List[schemas.Item]:
+    @fastapi_funnel
+    async def index(self, q: PagenationQuery) -> List[schemas.Item]:
         return super().index(skip=q.skip, limit=q.limit)
 

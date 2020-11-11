@@ -2,14 +2,24 @@ from magnet.database import Base
 import sqlalchemy as sa
 
 
-class CryptoBase(Base):
-    __tablename__ = "__crypto_ohlc_daily"
+class CryptoPairs(Base):
+    __tablename__ = "__crypto_pairs"
+    id = sa.Column(sa.Integer, primary_key=True)
+    provider = sa.Column(sa.String(255), nullable=False, default="")
+    symbol = sa.Column(sa.String(255), nullable=False)
+
+
+class CryptoBase:
     id = sa.Column(sa.Integer, primary_key=True)
     provider = sa.Column(sa.String(255), nullable=False, default="")
     market = sa.Column(sa.String(255), nullable=False)
     product = sa.Column(sa.String(255), nullable=False)
     periods = sa.Column(sa.Integer, nullable=False)
-    close_time = sa.Column(sa.DateTime, nullable=False)
+
+
+class CryptoOhlc(Base, CryptoBase):
+    __tablename__ = "__crypto_ohlc_daily"
+    close_time = sa.Column(sa.Date, nullable=False)
     open_price = sa.Column(sa.Float, nullable=False)
     high_price = sa.Column(sa.Float, nullable=False)
     low_price = sa.Column(sa.Float, nullable=False)
@@ -27,10 +37,35 @@ class CryptoBase(Base):
     t_cross = sa.Column(sa.Integer, nullable=False, default=0, comment="1=golden cross -1=dead cross")
 
     __table_args__ = (
-        sa.UniqueConstraint(provider, market, product, periods, close_time, name="uix_price"),
-        sa.Index("uix_query", provider, market, product, periods),
+        sa.UniqueConstraint("provider", "market", "product", "periods", "close_time"),
+        sa.Index("uix_query", "provider", "market", "product", "periods"),
         {'comment': '外部データソースから取得したチャート'}
     )
+
+
+class CryptoTradeResult(Base, CryptoBase):
+    __tablename__ = "crypto_trade_results"
+    size = sa.Column(sa.DECIMAL, nullable=False)
+    ask_or_bid = sa.Column(sa.Integer, nullable=False)
+    entry_date = sa.Column(sa.DateTime, nullable=False)
+    entry_close_date = sa.Column(sa.DateTime, nullable=False)
+    entry_side = sa.Column(sa.String(255), nullable=False)
+    entry_price = sa.Column(sa.DECIMAL, nullable=False)
+    entry_commission = sa.Column(sa.DECIMAL, nullable=False)
+    entry_reason = sa.Column(sa.String(255), nullable=False)
+    settle_date = sa.Column(sa.DateTime, nullable=False)
+    settle_close_date = sa.Column(sa.DateTime, nullable=False)
+    settle_side = sa.Column(sa.String(255), nullable=False)
+    settle_price = sa.Column(sa.DECIMAL, nullable=False)
+    settle_commission = sa.Column(sa.DECIMAL, nullable=False)
+    settle_reason = sa.Column(sa.String(255), nullable=False)
+    job_name = sa.Column(sa.String(255), nullable=False)
+    job_version = sa.Column(sa.String(255), nullable=False)
+    is_back_test = sa.Column(sa.Boolean, nullable=False, default=False)
+    close_date_interval = sa.Column(sa.Integer, nullable=False)
+    diff_profit = sa.Column(sa.DECIMAL, nullable=False)
+    diff_profit_rate = sa.Column(sa.DECIMAL, nullable=False)
+    fact_profit = sa.Column(sa.DECIMAL, nullable=False)
 
 
 class WebArchiveBase:

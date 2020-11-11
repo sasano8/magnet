@@ -1,25 +1,11 @@
-from magnet import Base, get_db
 from pytest import fixture
 import main
-from magnet import Base, get_db
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
+from magnet import Base, get_db, create_test_engine
 
-SQLALCHEMY_DATABASE_URL = "sqlite:///./test.db"
-engine = create_engine(
-    SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False}
-)
-TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-Base.metadata.drop_all(bind=engine)
-Base.metadata.create_all(bind=engine)
+is_local = True
 
-
-def override_get_db():
-    try:
-        db = TestingSessionLocal()
-        yield db
-    finally:
-        db.close()
+if is_local:
+    engine, override_get_db = create_test_engine()
 
 
 @fixture(autouse=True, scope="session")
@@ -28,11 +14,11 @@ def override_dependency():
     テスト用データベースに切り替える。
     REST API経由のテスト実行をサポートするため、テスト完了時に依存データベースを元に戻す
     """
+    Base.metadata.drop_all(bind=engine)
+    Base.metadata.create_all(bind=engine)
 
-    # setup
-    print("setup!!!!")
-    main.app.dependency_overrides[get_db] = override_get_db
-    yield
-    # shutdown
-    print("shutdown!!!")
-    main.app.dependency_overrides[get_db] = get_db
+    try:
+        main.app.dependency_overrides[get_db] = override_get_db
+        yield
+    finally:
+        main.app.dependency_overrides[get_db] = get_db

@@ -2,7 +2,6 @@ import hashlib
 import httpx
 import hmac
 from urllib.parse import urlencode
-from ... import crud
 from .. import enums
 from libs import decorators, create_params
 from pydantic import BaseModel
@@ -10,7 +9,7 @@ from typing import Optional
 import datetime
 import json
 from enum import Enum
-from typing import List
+from typing import List, Literal
 import time
 from magnet.env import Env
 
@@ -45,19 +44,27 @@ class Board(BaseModel):
         }
 
 
+class Ticker(BaseModel):
+    product_code: str
+    state: str
+    timestamp: datetime.datetime
+    tick_id: int
+    best_bid: float
+    best_ask: float
+    best_bid_size: float
+    best_ask_size: float
+    total_bid_depth: float
+    total_ask_depth: float
+    market_bid_size: float
+    market_ask_size: float
+    ltp: float
+    volume: float
+    volume_by_product: float
+
+
 #
 # class ProductCode(Enum):
 #     pass
-
-
-class ChildOrderType(Enum):
-    limit = "LIMIT"
-    market = "MARKET"
-
-
-class Side(Enum):
-    buy = "BUY"
-    sell = "SELL"
 
 
 class TimeInForce(Enum):
@@ -71,11 +78,10 @@ class TimeInForce(Enum):
     fok = "FOK"
 
 
+
 class BitflyerPublicAPI:
     name = enums.Exchange.BITFLYER
     # product_code = ProductCode
-    child_order_type = ChildOrderType
-    side = Side
 
     def __init__(self, api_key, api_secret):
         self.api_key = api_key
@@ -96,13 +102,19 @@ class BitflyerPublicAPI:
         try:
             response.raise_for_status()
         except httpx._exceptions.HTTPError as err:
-            raise err
+            raise Exception("[{}][{}]:{}".format(response.status_code, response.reason_phrase, response.text))
 
         return response
 
     async def request_private(self, method: str, path: str, body: dict):
+        if method == "GET":
+            body = urlencode(body)
+            if body:
+                path = path + "?" + body
+
         url = "https://api.bitflyer.com" + path
         timestamp = str(int(datetime.datetime.today().timestamp() * 1000))
+
         signature = self.create_sign(
             method=method,
             timestamp=timestamp,
@@ -119,7 +131,7 @@ class BitflyerPublicAPI:
 
         async with httpx.AsyncClient() as client:
             if method == "GET":
-                response = await client.get(url, headers=headers, params=body)
+                response = await client.get(url, headers=headers)
             elif method == "POST":
                 response = await client.post(url, headers=headers, data=json.dumps(body))
             else:
@@ -143,7 +155,6 @@ class BitflyerPublicAPI:
             text.encode("utf-8"),
             hashlib.sha256
         )
-        # signature.update(text.encode("utf-8"))
         digest = signature.hexdigest()
         return digest
 
@@ -167,8 +178,8 @@ class BitflyerPublicAPI:
         )
         return res.text
 
-    @decorators.Decode
-    async def get_ticker(self, product_code: str = "BTC_JPY"):
+    @decorators.MapJson
+    async def get_ticker(self, product_code: str = "BTC_JPY") -> Ticker:
         """通貨の概要を取得する。"""
         res = await self.request_private(
             method="GET",
@@ -337,15 +348,16 @@ class BitflyerPrivateAPI(BitflyerPublicAPI):
         )
         return res.text
 
+
     @decorators.Decode
     async def post_sendchildorder(self,
                                   product_code: str,
-                                  child_order_type: str,
-                                  side: str,
+                                  child_order_type: Literal['LIMIT', 'MARKET'],
+                                  side: Literal['BUY', 'SELL'],
                                   size: float,
                                   price: float = None,
                                   minute_to_expire: int = 43200,
-                                  time_in_force: str = "GTC"
+                                  time_in_force: Literal['GTC', 'IOC', 'FOK'] = "GTC"
                                   ):
         """新規注文を出す。"""
         body = create_params(
@@ -387,9 +399,9 @@ class BitflyerPrivateAPI(BitflyerPublicAPI):
 
     @decorators.Decode
     async def post_sendparentorder(self,
-                                   order_method: str = "SIMPLE|IFD|OCO|IFDOCO",
+                                   order_method: Literal['SIMPLE', 'IFD', 'OCO', 'IFDOCO'] = "SIMPLE",
                                    minute_to_expire: int = 43200,
-                                   time_in_force: str = "GTC|IOC|FOK",
+                                   time_in_force: Literal['GTC', 'IOC', 'FOK'] = "GTC",
                                    parameters: List = []
                                    ):
         """
@@ -450,7 +462,7 @@ class BitflyerPrivateAPI(BitflyerPublicAPI):
                               count: int = 100,
                               before: int = None,
                               after: int = None,
-                              chiled_order_state: str = "ACTIVE|COMPLETED|CANCELED|EXPIRED|REJECTED",
+                              chiled_order_state: Literal["ACTIVE", "COMPLETED", "CANCELED", "EXPIRED", "REJECTED"] = None,
                               child_order_id: int = None,
                               child_order_acceptance_id: int = None,
                               parent_order_id: int = None
@@ -480,7 +492,7 @@ class BitflyerPrivateAPI(BitflyerPublicAPI):
                                count: int = 100,
                                before: int = None,
                                after: int = None,
-                               chiled_order_state: str = "ACTIVE|COMPLETED|CANCELED|EXPIRED|REJECTED",
+                               chiled_order_state: Literal["ACTIVE", "COMPLETED", "CANCELED", "EXPIRED", "REJECTED"] = None,
                                ):
         """親注文の一覧を取得する。"""
         body = create_params(
@@ -501,7 +513,7 @@ class BitflyerPrivateAPI(BitflyerPublicAPI):
     @decorators.Decode
     async def get_parentorder(self,
                               child_order_id: int = None,
-                              child_order_acceptance_id=None
+                              child_order_acceptance_id: str = None
                               ):
         """親注文の詳細を取得する。"""
         body = create_params(
@@ -611,13 +623,13 @@ class BitflyerPrivateAPI(BitflyerPublicAPI):
 
         res = await self.request_private(
             method="GET",
-            path="/v1/me/gettradingcommission",
+            path=f"/v1/me/gettradingcommission",
             body=body
         )
         return res.text
 
 
-@crud.exchanges
+# @crud.exchanges
 @decorators.Instantiate(api_key=Env.api_credentials["bitflyer"].api_key.get_secret_value(), api_secret=Env.api_credentials["bitflyer"].api_secret.get_secret_value())
 class Bitflyer(BitflyerPrivateAPI):
     pass

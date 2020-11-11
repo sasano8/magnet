@@ -1,15 +1,34 @@
 import json
+from libs.linq import Linq
 from magnet import app, logger, depends_db, get_db, BaseModel
-from . import schemas, crud
+from . import schemas, crud, views
 
-@app.on_event("startup")
-async def initial_default_data():
-    initial_data = [
+# イベントは並列でなく直列に実行される
+# @app.on_event("startup")
+# async def loop1():
+#     import asyncio
+#     for item in range(3):
+#         print("aaaaaaaaaaaaaaaaaaaaaaa")
+#         await asyncio.sleep(10)
+#
+#
+# @app.on_event("startup")
+# async def loop2():
+#     import asyncio
+#     for item in range(3):
+#         print("bbbbbbbbbb")
+#         await asyncio.sleep(10)
+#
+
+
+@views.router.on_event("startup")
+async def upsert_default_data():
+    default_profiles = Linq([
         schemas.TradeProfile(
             id=1,
             name="bitcjpyゴールデンクロス・デッドクロス売買",
             description="単純移動平均線5 25から算出したクロスサイン時にドテン売買を行う。",
-            provider="cryptwatch",
+            provider="cryptowatch",
             market="bitflyer",
             product="btcjpy",
             periods=60 * 60 * 24,
@@ -28,21 +47,8 @@ async def initial_default_data():
                 losscut=schemas.RulePosition(name="ロスカットなし")
             )
         )
-    ]
+    ])
 
-    logger.info(json.dumps((initial_data[0].dict()), indent=2, ensure_ascii=False))
     for db in get_db():
-        crud.TradeProfile(db=db).upsert(data=initial_data[0])
-
-
-
-
-
-
-
-
-# async def trade_btcjpy_cross_algorithm():
-    # current_value = None
-    # どういう処理にするか？
-    # アルゴリズムが値を検証し、サインを出力する
-    # サイン
+        rep = crud.TradeProfile(db=db)
+        default_profiles.dispatch(rep.upsert)

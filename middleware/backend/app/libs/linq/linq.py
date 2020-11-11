@@ -503,6 +503,7 @@ class Linq(GenericModel, Iterable[T]):
         partial = functools.partial(evalute, self)
         return Query(partial, 0)
 
+    @linq
     def hook_if(
         self,
         predicate,
@@ -516,7 +517,7 @@ class Linq(GenericModel, Iterable[T]):
         partial = functools.partial(evalute, self)
         return Query(partial, 0)
 
-
+    @linq
     def raise_if(self, predicate, exc=lambda func_name, index, obj: ValueError(f"{func_name} {index}: {obj}")) -> 'Linq[T]':
         def evalute(iterator):
             for index, item in enumerate(iterator):
@@ -680,8 +681,11 @@ class Linq(GenericModel, Iterable[T]):
         return result
 
     # 判定
-    def contains(self) -> bool:
-        raise NotImplementedError()
+    def contains(self, predicate) -> bool:
+        for item in self:
+            if predicate(item):
+                return True
+        return False
 
     def all(self) -> bool:
         return all(self)
@@ -730,7 +734,11 @@ class Linq(GenericModel, Iterable[T]):
         if selector:
             return self.map(selector).sum()
         else:
-            return sum(self)
+            # なぜかsum関数だと計算できない
+            result = 0
+            for item in self:
+                result += item
+            return result
 
     def average(self, selector: Callable[[T], R] = None) -> float:
         if selector:
@@ -759,7 +767,7 @@ class Linq(GenericModel, Iterable[T]):
         return Query(partial)
 
     # 処理実行
-    def dispatch(self, *args: Iterable[Callable[[Any], Any]]) -> NoReturn:
+    def dispatch(self, *args: Callable[[Any], Any]) -> NoReturn:
         """ファンクションに要素を送出します。ファンクションはいくつも渡すことができます。"""
 
         for item in self:
@@ -767,7 +775,7 @@ class Linq(GenericModel, Iterable[T]):
                 func(item)
 
     # 処理実行
-    def each(self, *args: Iterable[Callable[[Any], Any]]) -> NoReturn:
+    def each(self, *args: Callable[[Any], Any]) -> NoReturn:
         """ファンクションに要素を送出します。ファンクションはいくつも渡すことができます。"""
 
         for item in self:
@@ -1016,4 +1024,33 @@ class LinqEvent:
 
     def stream(self, iterable):
         self.__call__(iterable)
+
+
+class MiniDB(Generic[T]):
+    def __init__(self):
+        self.db = {}
+
+    def key_selector(self, value) -> str:
+        return value.__name__.lower()
+
+    def query(self) -> Linq[T]:
+        return Linq(self.db.values())
+
+    def get(self, key: str) -> T:
+        result = self.db.get(key, None)
+        return result
+
+    def add(self, value) -> T:
+        key = self.key_selector(value)
+        if key is None:
+            raise ValueError("Can't add None.")
+
+        if value is None:
+            raise ValueError("Can't add None.")
+
+        if key in self.db:
+            raise ValueError("Already key exists.")
+
+        self.db[key] = value
+        return value
 

@@ -1,5 +1,6 @@
 from fastapi.responses import HTMLResponse
-from magnet import logger, rabbitmq, app
+from fastapi import Query
+from magnet import logger, rabbitmq, app, PagenationQuery
 import magnet.user.views
 import magnet.ingester.views
 import magnet.research.views
@@ -8,7 +9,7 @@ import magnet.crawler.views
 import magnet.trade.views
 import magnet.trade_profile.views
 import magnet.develop.views
-
+from libs.pydantic import funnel
 
 @app.get("/", response_class=HTMLResponse)
 async def root():
@@ -26,12 +27,18 @@ async def root():
         <code>
         sudo jupyter contrib nbextension install<br>
         sudo jupyter nbextensions_configurator enable<br>
-        sudo jupyter notebook --ip=0.0.0.0 --allow-root --notebook-dir=jupyter --NotebookApp.token='' --NotebookApp.password=''<br>
+        sudo jupyter notebook --ip=0.0.0.0 --allow-root --notebook-dir=jupyter --NotebookApp.token='' --NotebookApp.password='' &<br>
         streamlit run magnet/streamlit_ui/main.py<br>
         </code>
     </body>
     </html>
     """
+
+# @app.get("/mytest")
+# @model_overload
+# async def mytest(q: CommonQuery):
+# # async def mytest(skip: int = Query(0, alias="from"), limit: int = 100, query: dict = {}):
+#     return 1
 
 app.include_router(magnet.user.views.router, prefix="/users")
 app.include_router(magnet.research.views.router, prefix="/research")
@@ -39,7 +46,7 @@ app.include_router(magnet.crawler.views.router, prefix="/crawler")
 app.include_router(magnet.executor.views.router, prefix="/executor")
 app.include_router(magnet.ingester.views.router, prefix="/ingester")
 app.include_router(magnet.trade.views.router, prefix="/trade")
-app.include_router(magnet.trade_profile.views.router, prefix="/trade_profile")
+app.include_router(magnet.trade_profile.views.router, prefix="/trader")
 app.include_router(magnet.develop.views.router, prefix="/develop")
 
 
@@ -54,9 +61,15 @@ def shutdown_event():
     logger.info("shutdown fastapi app!!!!!!!")
 
 
-# if __name__ == "__main__":
-#     import sys
-#     args = sys.argv
+
+logger.info(f"[STARTUP EVENT]: {len(app.router.on_startup)}")
+for event in app.router.on_startup:
+    logger.info(f"{event.__module__}.{event.__name__}")
+
+logger.info(f"[SHUTDOWN EVENT]: {len(app.router.on_shutdown)}")
+for event in app.router.on_shutdown:
+    logger.info(f"{event.__module__}.{event.__name__}")
+
 
 def exec_pytest():
     # ログイン時にscope=["me", "items"]を要求すると、最後の要素しか反映されない

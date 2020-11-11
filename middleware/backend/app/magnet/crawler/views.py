@@ -1,7 +1,7 @@
 from typing import List, Optional
 from . import crud
-from magnet import get_db, TemplateView, CommonQuery, default_query
-from magnet.vendors import cbv, InferringRouter
+from magnet import get_db, TemplateView, PagenationQuery
+from magnet.vendors import cbv, InferringRouter, fastapi_funnel
 
 
 router = InferringRouter()
@@ -13,7 +13,8 @@ class CrawlerView(TemplateView[crud.crawlers]):
         raise NotImplementedError()
 
     @router.get("/")
-    async def index(self, q: CommonQuery = default_query) -> List[str]:
+    @fastapi_funnel
+    async def index(self, q: PagenationQuery) -> List[str]:
         mapping = map(lambda key_value: key_value[0], crud.crawlers.list())
         arr = list(mapping)
         return arr

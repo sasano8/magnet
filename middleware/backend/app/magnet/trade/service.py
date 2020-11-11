@@ -3,18 +3,11 @@ import asyncio
 from . import crud, schemas
 from .impl import enums
 from .impl import exchanges as ex
-from .impl import broker
+from .impl import brokers
 from fastapi import HTTPException, Depends
-from pydantic import create_model
-# from workers import rabbitmq
 from magnet import rabbitmq, Linq
 from libs.generator import dump_pydantic_code_from_json
-from pydantic import BaseModel
-import json
-import magnet.datastore.crud as datastore_crud
-import magnet.datastore.schemas as datastore_schemas
-from typing import List
-import datetime
+
 
 
 def get_exchange(name: enums.Exchange):
@@ -63,7 +56,7 @@ async def exec_zaif(profile: schemas.ProfilePrimitive):
 
     while count == 0:
         await asyncio.sleep(1)
-        ticker = await broker.Zaif.get_ticker(enums.CurrencyPair.btc_jpy)
+        ticker = await brokers.Zaif.get_ticker(enums.CurrencyPair.btc_jpy)
         print(ticker)
 
 
@@ -78,7 +71,7 @@ async def exec_zaif(profile: schemas.ProfilePrimitive):
             #     price=1,
             #     amount=1
             # ),
-            broker.Zaif.post_buy(
+            brokers.Zaif.post_buy(
                 currency_pair=exchange1.currency_pairs.xem_jpy,
                 price=1,
                 amount=1
@@ -111,7 +104,7 @@ async def exec_bitflyer(profile: schemas.ProfilePrimitive):
 
     while count == 0:
         await asyncio.sleep(1)
-        # ticker = await broker.Zaif.get_ticker(enums.CurrencyPair.btc_jpy)
+        # ticker = await brokers.Zaif.get_ticker(enums.CurrencyPair.btc_jpy)
         # print(ticker)
 
 
@@ -127,7 +120,7 @@ async def exec_bitflyer(profile: schemas.ProfilePrimitive):
             #     size=0.001,
             #     time_in_force="FOK"
             # )
-            broker.Bitflyer.post_sell(currency_pair=None, price=1159200, amount=0.01)
+            brokers.Bitflyer.post_sell(currency_pair=None, price=1159200, amount=0.01)
         ]
 
         tasks = map(lambda x: asyncio.create_task(x), coroutines)
@@ -150,49 +143,3 @@ async def exec_bitflyer(profile: schemas.ProfilePrimitive):
 
 
         count += 1
-
-
-from magnet.database import get_db
-
-
-async def load_ohlc_by_laundering(market: str = "bitfllyer", product: str = "bitcjpy", periods: int = 60 * 60 * 24, after: datetime.datetime = datetime.datetime(2010, 1, 1), db=Depends(get_db)):
-    """指定したリソースの４本値を洗い替えする"""
-
-    api = ex.CryptowatchAPI
-    provider = "cryptowatch"
-
-    def convert(obj) -> datastore_schemas.Ohlc:
-        # import magnet.trade.impl.exchanges.cryptowat
-        # obj: magnet.trade.impl.exchanges.cryptowat.Ohlc = obj
-
-        return datastore_schemas.Ohlc(
-            provider=provider,
-            market=market,
-            product=product,
-            periods=periods,
-            close_time=obj.close_time,
-            open_price=obj.open_price,
-            high_price=obj.high_price,
-            low_price=obj.low_price,
-            close_price=obj.close_price,
-            volume=obj.volume,
-            quote_volume=obj.quote_volume
-        )
-
-    result = await api.list_ohlc(market="bitflyer", product="btcjpy", periods=periods, after=after)
-    mapped = map(convert, result)
-    mapped = datastore_schemas.Ohlc.compute_technical(mapped)
-
-    result = datastore_crud.CryptoOhlcDaily.bulk_insert_by_laundering(
-        db=db,
-        data=mapped,
-        provider=provider,
-        market=market,
-        product=product,
-        periods=periods,
-        after=after
-    )
-
-    return result
-
-

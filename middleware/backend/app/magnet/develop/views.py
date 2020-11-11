@@ -2,8 +2,8 @@ from typing import List
 from libs import generator
 from fastapi.responses import PlainTextResponse, HTMLResponse
 import hjson
-from magnet import get_db, Session, default_query, CommonQuery, Depends
-from magnet.vendors import cbv, InferringRouter, TemplateView
+from magnet import get_db, Session, PagenationQuery, Depends
+from magnet.vendors import cbv, InferringRouter, TemplateView, fastapi_funnel
 
 
 router = InferringRouter()

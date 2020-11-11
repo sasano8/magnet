@@ -89,5 +89,107 @@ python3 -m cli db migrate
 ボリュームとはあまり因果関係がないように見える。
 最大の利益が取れないアルゴリズムのため、利確タイミングを改善するだけで大きく成果を上げられそうだ。
 大きく利幅を取った後は、負けることが多い。（利幅1.4％目安）
+短期的な暴騰・急落に弱そうで、時価総額が低いアセットなど単一意思の資金注入の影響を受けやすいため、トレンドが働かない。
+買いと売りでどちらが利益率が高いのか調べたところ、売りの方が利益を上げていた。
+と思ったが、2017年末に最高値をつけ、激しい値動きで損失を出していた。
+このように短期間に激しく動くような相場で相性が悪い。
+
+そのため、トレンド感がないレンジ相場対応と、激しく殴り合っている爆弾相場に対応するアルゴリズムで弱点を補いたい。
+あと、リミットは1.4倍におく
+小さい負けが多いのでレンジで補完する。
+トレンド用スロット
+レンジ用スロット
+有事用スロット
+がいる
+
+次のアルゴリズムは
+クロスで逆にエントリーし、
+1.1%で利確
+サイン検出で反転
+0.9%で損切り
+両建でリスクヘッジしつつ、トレンドアルゴリズムのウィークポイントをカバーする
+損切りしたとしても、その後は大きく伸びる傾向があるので取り戻せる
+
+# 開発ガイドライン
+
+## データベース/トランザクション
+当該アプリケーションでトランザクションを扱う場合は、リポジトリを介して操作を行ってください。
+リポジトリは暗黙的なコミットを行いませんが、要所でflush（データベースにSQLを発行）を行い、id等が発行されたオブジェクトを返します。
+それらは、セッションがスコープを抜けた際に、自動的にcommitされ永続化されるか、例外発生時に自動的にrollbackされます。
+これにより、様々なレコード操作処理を一連のトランザクションとして組み合わせることができます。
+以下はサンプルコードです。
+obj1、obj2のレコードの仮作成（flush）は、例外発生によりrollbackされ、一貫性が担保されます。
+
+```
+def get_db() -> Iterable[Session]:
+    db: Session = CreateSession()
+    try:
+        yield db
+        db.commit()
+    finally:
+        # noinspection PyBroadException
+        try:
+            # In case of uncommit, it will be rolled back implicitly
+            db.close()
+        except Exception as e:
+            logger.critical(exc_info=True)
+
+def sample_transaction()
+    for db in get_db():
+        rep1 = crud.Repository1(db)
+        rep2 = crud.Repository2(db)
+        obj1 = rep1.create()
+        print(obj1.id)  # => 1
+        obj2 = rep2.create()
+        print(obj2.id)  # => 2
+        raise Exception()
+    
+    return obj1, obj2
+
+sample_transaction()
+```
+
+## データベース/バージョンカウンター
+データベースのトランザクション分離レベルが"REPEATABLE READ"以下の場合、ある処理を行っている間に別のトランザクションでレコードが更新された場合、
+更新が衝突し値が消失する可能性があります。通常、同時更新に対してターゲット行をロックするか、コミット時にエラーを発生させるなど対応が必要になります。
+Sqlalchemyでは、version_id_colを用いることで同時実行制御を行うことができます。
+
+- [参考](https://docs.sqlalchemy.org/en/13/orm/versioning.html)
 
 
+
+fastapi-realworld-example-appの構成
+-----------------
+
+Files related to application are in the ``app`` or ``tests`` directories.
+Application parts are:
+
+::
+
+    app
+    ├── api              - web related stuff.
+    │   ├── dependencies - dependencies for routes definition.
+    │   ├── errors       - definition of error handlers.
+    │   └── routes       - web routes.
+    ├── core             - application configuration, startup events, logging.
+    ├── db               - db related stuff.
+    │   ├── migrations   - manually written alembic migrations.
+    │   └── repositories - all crud stuff.
+    ├── models           - pydantic models for this application.
+    │   ├── domain       - main models that are used almost everywhere.
+    │   └── schemas      - schemas for using in web routes.
+    ├── resources        - strings that are used in web responses.
+    ├── services         - logic that is not just crud related.
+    └── main.py          - FastAPI application creation and configuration.
+
+
+    magnet
+    ├── common        - common component for components.
+    ├── componets        - web related stuff.
+    │   ├── views(api)             - api
+    │   ├── schemas                - validation
+    │   ├── repositories(crud)     - crud
+    │   ├── models                 - model
+    │   ├── query                  - query
+    │   ├── events                 - event
+    │   ├── utils                  - utils

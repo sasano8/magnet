@@ -3,8 +3,8 @@ from fastapi import HTTPException,status
 from sqlalchemy.orm import Session
 from . import schemas, worker, crud
 from magnet.ingester import schemas as ingester
-from magnet import get_db, CommonQuery, default_query, TemplateView, Depends
-from magnet.vendors import cbv, InferringRouter
+from magnet import get_db, PagenationQuery, TemplateView, Depends
+from magnet.vendors import cbv, InferringRouter, fastapi_funnel
 
 
 router = InferringRouter()
@@ -19,7 +19,8 @@ class ExecutorView(TemplateView[crud.Executor]):
         return super().rep
 
     @router.get("/")
-    async def index(self, q: CommonQuery = default_query) -> List[schemas.ExecutorBase]:
+    @fastapi_funnel
+    async def index(self, q: PagenationQuery) -> List[schemas.ExecutorBase]:
         return super().index(skip=q.skip, limit=q.limit)
 
     @router.post("/")

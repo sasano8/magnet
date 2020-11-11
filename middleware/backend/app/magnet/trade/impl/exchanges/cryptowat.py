@@ -1,7 +1,7 @@
 import httpx
 import datetime
 from libs import decorators, create_params
-from pydantic import BaseModel
+from pydantic import BaseModel, parse_obj_as
 from typing import Dict, List, Tuple, Mapping
 import json
 
@@ -10,6 +10,14 @@ class Allowance(BaseModel):
     cost: float
     remaining: float
     upgrade: str
+
+
+class Pairs(BaseModel):
+    id: int
+    symbol: str
+    base: dict
+    quote: dict
+    route: str
 
 
 class Ohlc(BaseModel):
@@ -25,6 +33,22 @@ class Ohlc(BaseModel):
 @decorators.Instantiate
 class CryptowatchAPI:
     last_allowance: Allowance = Allowance(cost=0, remaining=1000000, upgrade="")
+
+    async def get_pairs(self)  -> List[Pairs]:
+        url = "https://api.cryptowat.ch/pairs"
+
+        async with httpx.AsyncClient() as client:
+            response = await client.get(url)
+
+        try:
+            response.raise_for_status()
+        except httpx._exceptions.HTTPError as err:
+            raise err
+
+        dic = json.loads(response.text)
+        result = parse_obj_as(List[Pairs], dic["result"])
+        return result
+
 
     async def list_ohlc(self,
                         market: str = "bitflyer",

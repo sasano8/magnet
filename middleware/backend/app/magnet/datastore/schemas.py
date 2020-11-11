@@ -1,16 +1,30 @@
-from pydantic import BaseModel
 import datetime
-from typing import Optional, List, Iterable
+from decimal import Decimal
+from typing import Optional, List, Iterable, Literal
 from libs.linq import Linq
+from magnet import BaseModel
 
-
-class Ohlc(BaseModel):
+class Pairs(BaseModel):
     id: Optional[int]
-    provider: str
-    market: str
-    product: str
+    provider: Literal["cryptowatch"]
+    symbol: str
+
+
+class CryptoBase(BaseModel):
+    id: Optional[int]
+    provider: Literal["cryptowatch"]
+    market: Literal["bitflyer"]
+    product: Literal["btcjpy"]
     periods: int
-    close_time: datetime.datetime
+
+
+class Ohlc(CryptoBase):
+    # id: Optional[int]
+    # provider: Literal["cryptowatch"]
+    # market: Literal["bitflyer"]
+    # product: Literal["btcjpy"]
+    # periods: int
+    close_time: datetime.date
     open_price: float
     high_price: float
     low_price: float
@@ -26,7 +40,7 @@ class Ohlc(BaseModel):
     t_sma_30: float = None
     t_sma_200: float = None
 
-    t_cross: float = None
+    t_cross: int = None
 
     class Config:
         orm_mode = True
@@ -36,9 +50,8 @@ class Ohlc(BaseModel):
         import pandas as pd
 
         ohlc_arr = list(ohlc_arr)
-        sr = Linq(ohlc_arr).map(lambda x: x.close_price).series()
+        sr = Linq(ohlc_arr).map(lambda x: x.close_price).to_series()
 
-        # sr = pd.Series(map(ohlc_arr, lambda x: x.close_price))
         sma_5 = sr.rolling(5, min_periods=1).mean()  # 一週間　仮想通貨の場合は？？
         sma_10 = sr.rolling(10, min_periods=1).mean()
         sma_15 = sr.rolling(15, min_periods=1).mean()
@@ -77,6 +90,83 @@ class Ohlc(BaseModel):
         return ohlc_arr
 
 
+class CryptoTradeResult(CryptoBase):
+    size: Decimal
+    ask_or_bid: Literal[1, -1] = None
+    entry_date: datetime.datetime
+    entry_close_date: datetime.date = None
+    entry_side: Literal["bid", "ask"]
+    entry_price: Decimal
+    entry_commission: Decimal
+    entry_reason: str
+    settle_date: datetime.datetime
+    settle_close_date: datetime.date = None
+    settle_side: Literal["bid", "ask"]
+    settle_price: Decimal
+    settle_commission: Decimal
+    settle_reason: str
+    job_name: str
+    job_version: str
+    is_back_test: bool = False
+    close_date_interval: int = None
+    diff_profit: Decimal = None
+    diff_profit_rate: Decimal = None
+    fact_profit: Decimal = None
+
+    @property
+    def _compute_ask_or_bid(self):
+        if self.entry_side == "ask":
+            return 1
+        elif self.entry_side == "bid":
+            return -1
+        else:
+            raise Exception()
+
+    # @prop("profit_loss")
+    @property
+    def _compute_diff_profit(self):
+        ask_or_bid = self._compute_ask_or_bid
+        entry = self.entry_price
+        settle = self.settle_price
+        result = ask_or_bid * (settle - entry)
+        return result  #  + self.entry_commission + self.settle_commission
+
+    @property
+    def _compute_diff_profit_rate(self):
+        settle = self.entry_price + self.diff_profit
+        result = settle / self.entry_price
+        return result
+
+    @property
+    def _compute_fact_profit(self):
+        return self._compute_diff_profit * self.size
+
+    @property
+    def _compute_entry_close_date(self):
+        return self.entry_date.date() + datetime.timedelta(days=1)
+
+    @property
+    def _compute_settle_close_date(self):
+        return self.settle_date.date() + datetime.timedelta(days=1)
+
+    @property
+    def _compute_close_date_interval(self):
+        return (self._compute_settle_close_date - self._compute_entry_close_date).days
+
+    def dict(self, **kwargs):
+        from decimal import ROUND_HALF_UP, ROUND_HALF_EVEN
+
+        self.ask_or_bid = self._compute_ask_or_bid
+        self.entry_close_date = self._compute_entry_close_date
+        self.settle_close_date = self._compute_settle_close_date
+        self.close_date_interval = self._compute_close_date_interval
+        self.diff_profit = self._compute_diff_profit
+        self.diff_profit_rate = self._compute_diff_profit_rate.quantize(Decimal("0.0001"), rounding=ROUND_HALF_UP)
+        self.fact_profit = self._compute_fact_profit.quantize(Decimal("0"), rounding=ROUND_HALF_UP)
+        dic = super().dict(**kwargs)
+        return dic
+
+
 class Detail(BaseModel):
     url: Optional[str]
     url_cache: Optional[str]
@@ -113,3 +203,4 @@ class CommonSchema(BaseModel):
         self.url_cache = self.detail.url_cache
         self.title = self.detail.title
         self.summary = self.detail.summary
+

@@ -7,10 +7,10 @@ from inspect import signature
 from enum import Enum
 from typing import Dict
 
+
 class Message(BaseModel):
     func: str
     kwargs: dict
-
 
 
 class FunctionWrapper(BaseModel):
@@ -38,7 +38,6 @@ class FunctionWrapper(BaseModel):
             func_type=func_type,
             converters=converters
         )
-
 
     def enumrate_arg_converter(self, func):
         sig = signature(func)

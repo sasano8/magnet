@@ -25,10 +25,10 @@ def test_view_guest_create_login_delete():
             password=PASSWORD
         )
     )
-    assert response.status_code == 200
     data = response.json()
     correct_data["id"] = data["id"]
     assert data == correct_data
+    assert response.status_code == 200
 
     # login
     # If you need to send Form Data instead of JSON, use the data parameter instead.

@@ -4,8 +4,8 @@ from fastapi import (APIRouter, Depends, FastAPI, HTTPException, Query,
 from magnet.database import get_db
 from sqlalchemy.orm import Session
 from . import schemas, crud, impl
-from magnet import CommonQuery, default_query
-from magnet.vendors import cbv, InferringRouter, TemplateView
+from magnet import PagenationQuery
+from magnet.vendors import cbv, InferringRouter, TemplateView, fastapi_funnel
 from magnet.executor import worker
 
 JOBGROUP_ROOT_ID = 0
@@ -108,7 +108,8 @@ class IngesterView(TemplateView[crud.Ingester]):
         return super().rep
 
     @router.get("/queue")
-    async def index(self, q: CommonQuery = default_query) -> List[schemas.CommonSchema]:
+    @fastapi_funnel
+    async def index(self, q: PagenationQuery) -> List[schemas.CommonSchema]:
         return super().index(skip=q.skip, limit=q.limit)
 
     @router.post("/queue")

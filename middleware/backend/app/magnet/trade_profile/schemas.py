@@ -1,7 +1,8 @@
+import datetime
 from typing import Literal, Optional
-from pydantic import validator
+from pydantic import validator, Field
 from magnet import BaseModel
-
+from magnet.trade import interface
 
 class RuleAmount(BaseModel):
     target: Literal["order", "wallet"] = "order"
@@ -14,6 +15,8 @@ class RulePosition(BaseModel):
     description: str = ""
     algorithm: str = "default"
     args: dict = {}
+    order_type: Literal["market", "limit"] = "market"  # 指値・成り行き
+    time_in_force: Literal['GTC', 'IOC', 'FOK'] = "GTC"
     amount: RuleAmount = None
 
 
@@ -58,6 +61,7 @@ class TradeProfile(BaseModel):
     class Config:
         orm_mode = True
     id: int
+    version: int = 0
     name: str
     description: str = ""
     provider: str
@@ -66,9 +70,58 @@ class TradeProfile(BaseModel):
     periods: int
     cron: str = ""
     broker: str
-    order_id: float = None
     trade_rule: RuleTrade
-
+    job_type: Literal["production"] = Field("production", const=True)
+    trade_type: str = "stop_and_reverse"
+    monitor_topic: str = "yesterday_ticker"
+    detector_name: str = "detect_t_cross"  # 最終的にはDSLでスクリプト化したい
 
 TradeProfileCreate = TradeProfile.prefab("Create", exclude=["id"])
 TradeProfilePatch = TradeProfile.prefab("Patch", optionals=[...])
+
+
+class TradeJob(TradeProfile):
+    job_type: Literal["production", "virtual", "backtest"]
+    last_check_date: datetime.datetime = None
+    order_status: interface.OrderStatus = None
+    # is_backtest: bool = False
+    # trade_type: str = "stop_and_reverse"
+    # monitor_topic: str = "yesterday_ticker"
+    # detector_name: str = "detect_t_cross"  # 最終的にはDSLでスクリプトをコンパイルするようにする
+
+    @property
+    def detector(self):
+        return self.get_detector_by_name(self.detector_name)
+
+    def get_detector_by_name(self, detector_name):
+        if detector_name == "detect_t_cross":
+            return self.detect_t_cross
+        else:
+            raise Exception()
+
+    def detect_t_cross(self, ticker):
+        if ticker.t_cross == 0:
+            return None
+        elif ticker.t_cross == 1:
+            return "ask"
+        elif ticker.t_cross == -1:
+            return "bid"
+        else:
+            raise Exception()
+
+    @property
+    def topic(self):
+        return None
+
+    def get_topic_by_name(self, topic_name):
+        if topic_name == "yesterday_ticker":
+            return None
+        else:
+            raise Exception()
+
+class TradeResult(BaseModel):
+    job_id: int
+    order_id: int = None
+    msg: str
+
+

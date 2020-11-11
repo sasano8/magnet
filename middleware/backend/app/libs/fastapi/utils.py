@@ -1,8 +1,8 @@
 from enum import Enum
 from typing import Generic, TypeVar, Type, Any, Tuple, Iterable, Union, List, Literal
-from pydantic import BaseModel, PydanticValueError, validator, ValidationError, validate_arguments
-from pydantic.generics import GenericModel
+from pydantic import BaseModel, PydanticValueError, validator, ValidationError, validate_arguments, Field
 from sqlalchemy.orm import Query, Session
+from sqlalchemy.orm.session import make_transient
 from sqlalchemy.sql.schema import Column
 from sqlalchemy.inspection import inspect
 from fastapi import HTTPException, status
@@ -18,8 +18,6 @@ def paginate(query: Query, page: int, items_per_page: int):
 
 
 Alchemy = TypeVar('Alchemy')
-
-arr = [1, 2]
 
 
 class EnumBase(Enum):
@@ -52,9 +50,9 @@ class ExcBuilder:
         self.errors = []
 
     def add(self,
+            loc: tuple,
             msg: EnumBase,
             type_: EnumBase,
-            loc: tuple = ()
     ):
         self.errors.append({"loc": loc, "msg": msg.__str__(), "type": type_.__str__()})
 
@@ -98,24 +96,42 @@ class GenericRepository(Generic[Alchemy]):
     def contais_primary_key(self, data: BaseModel):
         for field in self.primary_keys:
             if hasattr(data, field.name):
-                return True
+                if data[field.name] is not None:
+                    return True
         return False
 
-    def query(self) -> Query:
-        return self.db.query(self.model)
+    def build_primary_keys_criterion(self, data: dict):
+        m = self.model
+        conditions = []
+        for field in self.primary_keys:
+            col = getattr(m, field.name)
+            val = data[field.name]
+            conditions.append(col == val)
+        if len(conditions) == 0:
+            raise Exception()
+        return False
 
-    def index(self, skip: int = 0, limit: int = 100) -> Union[Iterable[Alchemy], Query]:
-        return self.query().offset(skip).limit(limit)
+    def select(self, *fields):
+        return self.db.query(*fields)
+
+    def filter(self, *criterion):
+        return self.db.query(self.model).filter(*criterion)
+
+    # TOOD: filterに統合する
+    def query(self, *criterion) -> Union[Iterable[Alchemy], Query]:
+        return self.db.query(self.model).filter(*criterion)
 
     def get(self, id: int) -> Alchemy:
+        # criterion = self.build_primary_keys_criterion(dict(id=id))
         return self.query().filter(self.model.id == id).one_or_none()
 
     def create(self, data: BaseModel) -> Alchemy:
-        if self.contais_primary_key(data):
+        dic = data.dict()
+        if self.contais_primary_key(dic):
             raise ValueError("create時にprimary keyを含めることはできません。")
 
         obj = self.model(
-            **data.dict()
+            **dic
         )
         db = self.db
         db.add(obj)
@@ -132,8 +148,7 @@ class GenericRepository(Generic[Alchemy]):
         obj = self.query().filter(self.model.id == data.id).one_or_none()
         if obj is None:
             return None
-
-        dic = data.dict(exclude_unset=True)  # 未設定の価は出力しない
+        dic = data.dict(exclude_unset=True)  # 未設定の価は更新しない
         [setattr(obj, k, v) for k, v in dic.items()]
         self.db.commit()
         self.db.refresh(obj)
@@ -141,19 +156,22 @@ class GenericRepository(Generic[Alchemy]):
 
     def upsert(self, data: BaseModel) -> Alchemy:
         obj = self.update(data)
-        if obj is None:
-            obj = self.model(
-                **data.dict()
-            )
-            db = self.db
-            db.add(obj)
-            db.commit()
-            db.refresh(obj)
+        if obj:
+            return obj
+        # TODO: idがコピーされるため、除外した方がよい？
+        obj = self.model(
+            **data.dict()
+        )
+        db = self.db
+        db.add(obj)
+        db.commit()
+        db.refresh(obj)
 
         return obj
 
     def delete(self, id: int) -> int:
         count = self.query().filter(self.model.id == id).delete()
+        # count = self.query(self.model.id == id).delete()
         self.db.commit()
         return count
 
@@ -164,20 +182,20 @@ class GenericRepository(Generic[Alchemy]):
 
     def put(self, data: BaseModel) -> Alchemy:
         self.query().filter(self.model.id == data.id).delete()
+        # self.query(self.model.id == data.id).delete()
         obj = self.create(data)
         return obj
-
-    def put_cascade(self, db: Session, data: BaseModel) -> Alchemy:
-        # TODO: 単純なputの場合、delete時に関係データを削除してしまうため、削除せずに置き換える方法を考える
-        raise NotImplementedError()
 
     def duplicate(self, id: int) -> Alchemy:
         obj = self.get(id)
         if obj is None:
             return None
 
+        self.db.expunge(obj)  # セッションからオブジェクトを除外する
         obj.id = None
+        make_transient(obj)  # オブジェクトを一時的なものにする。よく分からない。
         self.db.add(obj)
+        self.db.commit()
         self.db.refresh(obj)
         return obj
 
@@ -201,15 +219,16 @@ class GenericRepository(Generic[Alchemy]):
 
         return deleted, inserted
 
-    def bulk_delete_insert(self, delete_query: Query, rows: Iterable[BaseModel], auto_commit=True) -> Tuple[int, int]:
+    def bulk_delete_insert(self, delete_query: Query, rows: Iterable[dict], auto_commit=True) -> Tuple[int, int]:
+        # TODO: トランザクション操作はおこないわないようにする
         model = self.model
 
         try:
             deleted = delete_query.delete()
             inserted = 0
 
-            for item in rows:
-                obj = model(**item.dict())
+            for row in rows:
+                obj = model(**row)
                 self.db.add(obj)
                 inserted += 1
 
@@ -224,6 +243,12 @@ class GenericRepository(Generic[Alchemy]):
 
 
 Repository = TypeVar("GenericRepository[Alchemy]", bound=GenericRepository[Alchemy])
+
+
+class CommonQuery(BaseModel):
+    skip: int = Field(0, alias="from")
+    limit: int = 100
+    query: dict = {}
 
 
 class TemplateView(Generic[Repository]):
@@ -246,14 +271,26 @@ class TemplateView(Generic[Repository]):
     def rep(self) -> Repository:
         repository = self.get_repository()
         return repository(self.db)
+    
+    def query(self, query: CommonQuery) -> List[Alchemy]:
+        rep = self.rep
+        m = rep.model
+        criterion = []
+        for key in query.query.keys():
+            field = getattr(self, key, None)
+            if not field:
+                Exception("想定していないフィールドです。")
+            cond = field == query.query[key]
+            criterion.append(cond)
+
+        return list(rep.query(*criterion).offset(query.skip).limit(query.limit))
 
     def index(self, skip: int = 0, limit: int = 100) -> List[Alchemy]:
-        results = self.rep.index(skip=skip, limit=limit)
+        results = self.rep.query().offset(skip).limit(limit)
         return list(results)
 
     def get(self, id: int) -> Alchemy:
         result = self.rep.get(id=id)
-
         if result is None:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
 
@@ -265,19 +302,19 @@ class TemplateView(Generic[Repository]):
 
     def delete(self, id: int) -> int:
         result = self.rep.delete(id=id)
-
         if result == 0:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
 
         return result
 
     def patch(self, id: int, data: BaseModel) -> Alchemy:
-        if hasattr(data, "id") and data.id != id:
+        if hasattr(data, "id") and data.id is not None and data.id != id:
             e = ExcBuilder(status.HTTP_422_UNPROCESSABLE_ENTITY)
             e.add(("id",), EMsg.E_002_NOT_EDIT, EType.E_002_VAL_ERR_IMMUTABLE)
             raise e.build()
-
-        result = self.rep.update(data)
+        obj = data.copy()
+        obj.id = id
+        result = self.rep.update(obj)
         if result is None:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
 

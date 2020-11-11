@@ -11,7 +11,7 @@ import datetime
 from magnet.env import Env
 
 
-def remove_none_value_from_dic(**kwargs: dict):
+def remove_none_value_from_dic(**kwargs):
     removed = {k: v for k, v in kwargs.items() if v is not None}
     return removed
 
@@ -61,7 +61,7 @@ class TradeResponse(ZaifPlaceHolder):
 
 class ZaifPublicAPI():
     name = enums.Exchange.ZAIF
-    currency_pairs = enums.CurrencyPair
+    # currency_pairs = enums.CurrencyPair
 
     def __init__(self, api_key, api_secret):
         self.api_key = api_key
@@ -104,65 +104,61 @@ class ZaifPublicAPI():
 
     @decorators.Decode
     async def get_currencies(self, currency: str = "all"):
-        url = f"https://api.zaif.jp/api/1/currency_pairs/{currency}"
-        # url = f"https://api.zaif.jp/api/1/currency_pairs/btc_jpy"
+        url = f"https://api.zaif.jp/api/1/currency/{currency}"
         params = {}
         res = await self.request_public(url=url, params=params)
         return res.text
 
-    #@decorators.MapJson
     @decorators.Decode
-    async def get_currency_pairs(self, currency_pair: str = "all"):
+    async def get_currency_pairs(self, currency_pair: enums.zaif_currency_pair = "all"):
         url = f"https://api.zaif.jp/api/1/currency_pairs/{currency_pair}"
         params = {}
         res = await self.request_public(url=url, params=params)
         return res.text
 
-    async def get_currency_pairs_enum_string(self):
-        arr = await self.get_currency_pairs()
-        arr = list(map(lambda x: x["name"].lower(), arr))
-        print(arr)
-
-        arr = await self.get_currency_pairs()
-        arr = list(map(lambda x: x["currency_pair"].lower(), arr))
-        print(arr)
+    # async def get_currency_pairs_enum_string(self):
+    #     arr = await self.get_currency_pairs()
+    #     arr = list(map(lambda x: x["name"].lower(), arr))
+    #     print(arr)
+    #
+    #     arr = await self.get_currency_pairs()
+    #     arr = list(map(lambda x: x["currency_pair"].lower(), arr))
+    #     print(arr)
 
     # get_tickerを使ったほうがよい
     @decorators.Decode
-    async def get_last_price(self, currency_pair: enums.CurrencyPair):
-        url = f"https://api.zaif.jp/api/1/last_price/{currency_pair.value}"
+    async def get_last_price(self, currency_pair: enums.zaif_currency_pair):
+        url = f"https://api.zaif.jp/api/1/last_price/{currency_pair}"
         params = {}
         res = await self.request_public(url=url, params=params)
         return res.text
 
-    # @decorators.MapJson
-    # async def get_ticker(self, currency_pair: enums.CurrencyPair) -> Ticker:
-    @decorators.Decode
-    async def get_ticker(self, currency_pair: enums.CurrencyPair) -> Ticker:
-        url = f"https://api.zaif.jp/api/1/ticker/{currency_pair.value}"
+    @decorators.MapJson
+    async def get_ticker(self, currency_pair: enums.zaif_currency_pair) -> Ticker:
+        url = f"https://api.zaif.jp/api/1/ticker/{currency_pair}"
         params = {}
         res = await self.request_public(url=url, params=params)
         return res.text
 
     @decorators.Decode
-    async def get_trades(self, currency_pair: enums.CurrencyPair):
+    async def get_trades(self, currency_pair: enums.zaif_currency_pair):
         """
         全ユーザの取引履歴を取得します。
         取得できる取引履歴は最新のものから最大150件となります。
         """
-        url = f"https://api.zaif.jp/api/1/trades/{currency_pair.value}"
+        url = f"https://api.zaif.jp/api/1/trades/{currency_pair}"
         params = {}
         res = await self.request_public(url=url, params=params)
         return res.text
 
     @decorators.Decode
-    async def get_depth(self, currency_pair: enums.CurrencyPair):
+    async def get_depth(self, currency_pair: enums.zaif_currency_pair):
         """
         板情報を取得します。
         売り情報は価格の昇順、買い情報は価格の降順でソートされた状態で返却されます。
         情報数は最大150件となります。
         """
-        url = f"https://api.zaif.jp/api/1/depth/{currency_pair.value}"
+        url = f"https://api.zaif.jp/api/1/depth/{currency_pair}"
         params = {}
         res = await self.request_public(url=url, params=params)
         return res.text
@@ -210,7 +206,7 @@ class ZaifTradingAPI(ZaifPublicAPI):
                 order: str = "DESC",
                 since: int = 0, # unix_timestamp
                 end: int = None, # unix_timestamp
-                currency_pair: str = None,
+                currency_pair: enums.zaif_currency_pair = None,
                 is_token: bool = False
         ):
             """
@@ -235,7 +231,7 @@ class ZaifTradingAPI(ZaifPublicAPI):
 
         @decorators.Decode
         async def get_active_orders(self,
-                                    currency_pair: str = None,
+                                    currency_pair: enums.zaif_currency_pair = None,
                                     is_token: bool = False,  # カウンターパーティトークンかどうか
                                     is_token_both: bool = False  # 全てのアクティブなオーダー情報を取得 | currency_pairやis_tokenに従ったオーダー情報を取得
                                     ):
@@ -252,7 +248,7 @@ class ZaifTradingAPI(ZaifPublicAPI):
 
         @decorators.Decode
         async def post_trade(self,
-                        currency_pair: str,
+                        currency_pair: enums.zaif_currency_pair,
                         action: str, # bid or ask
                         price: float,
                         amount: float,
@@ -263,19 +259,22 @@ class ZaifTradingAPI(ZaifPublicAPI):
             取引注文を行います。
             """
             url = f"https://api.zaif.jp/tapi"
-            params = remove_none_value_from_dic(method="trade", nonce=datetime.datetime.utcnow().timestamp(),
-                          currency_pair=currency_pair,
-                          action=action,
-                          price=price,
-                          amount=amount,
-                          limit=limit,
-                          comment=comment)
+            params = remove_none_value_from_dic(
+                method="trade",
+                nonce=datetime.datetime.utcnow().timestamp(),
+                currency_pair=currency_pair,
+                action=action,
+                price=price,
+                amount=amount,
+                limit=limit,
+                comment=comment
+            )
             res = await self.request(url=url, params=params)
             # '{"success": 0, "error": "invalid currency_pair parameter"}'
             return res.text
 
         @decorators.Decode
-        async def post_cancel_order(self, order_id: int, currency_pair: str = None, is_token: bool = False):
+        async def post_cancel_order(self, order_id: int, currency_pair: enums.zaif_currency_pair = None, is_token: bool = False):
             """
             注文の取消しを行います。
             """
@@ -369,7 +368,7 @@ class ZaifMarginTradingAPI(ZaifTradingAPI):
                             order: str = "DESC",
                             since: int = 0,
                             end: int = None,
-                            currency_pair: str = None
+                            currency_pair: enums.zaif_currency_pair = None
                             ):
         """
         信用取引のユーザー自身の取引履歴を取得します。
@@ -407,7 +406,7 @@ class ZaifMarginTradingAPI(ZaifTradingAPI):
     @decorators.Decode
     async def get_active_positions(self,
                    group_id: int = None,
-                   currency_pair: str = None
+                   currency_pair: enums.zaif_currency_pair = None
                    ):
         """
         信用取引の現在有効な注文一覧を取得します（未約定注文一覧）。
@@ -422,7 +421,7 @@ class ZaifMarginTradingAPI(ZaifTradingAPI):
 
     @decorators.Decode
     async def post_create_position(self,
-                                   currency_pair: str,
+                                   currency_pair: enums.zaif_currency_pair,
                                    action: str,
                                    amount: float,
                                    price: float,
@@ -450,7 +449,7 @@ class ZaifMarginTradingAPI(ZaifTradingAPI):
 
     @decorators.Decode
     async def post_change_position(self,
-                                   currency_pair: str,
+                                   currency_pair: enums.zaif_currency_pair,
                                    leverage_id: float,
                                    price: float,
                                    group_id: int = None,
@@ -498,7 +497,7 @@ class ZaifMarginTradingAPI(ZaifTradingAPI):
                    order: str = "DESC",
                    since: int = 0,
                    end: int = None,
-                   currency_pair: str = None
+                   currency_pair: enums.zaif_currency_pair = None
                    ):
         """
         信用取引のユーザー自身の取引履歴を取得します。
@@ -525,7 +524,7 @@ class ZaifPaymentAPI(ZaifOAuthAPI):
     pass
 
 
-@crud.exchanges
+# @crud.exchanges
 @decorators.Instantiate(api_key=Env.api_credentials["zaif"].api_key.get_secret_value(), api_secret=Env.api_credentials["zaif"].api_secret.get_secret_value())
 class Zaif(ZaifPaymentAPI):
     pass

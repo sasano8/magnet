@@ -23,7 +23,7 @@ async def trade_btcjpy():
     )
 
     # 3. データ再ロード
-    crud.CryptoOhlcDaily.filter(
+    crud.CryptoOhlcDaily.filter_partition(
         db,
         provider=provider,
         market=market,

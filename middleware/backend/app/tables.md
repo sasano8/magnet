@@ -61,6 +61,21 @@
 | option_keywords | JSON |  |  |  |  | [] |  |
 | deps | INTEGER |  |  |  |  | -1 |  |
 
+## dummy
+検証用に使うテーブル。本番環境では、本テーブルにデータが存在することはありません。
+
+| name | type | pk | unique | index | nullable | default | comment |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| id | INTEGER | x |  |  |  |  |  |
+| name | VARCHAR(255) |  |  |  |  |  |  |
+
+## __crypto_pairs
+| name | type | pk | unique | index | nullable | default | comment |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| id | INTEGER | x |  |  |  |  |  |
+| provider | VARCHAR(255) |  |  |  |  | "" |  |
+| symbol | VARCHAR(255) |  |  |  |  |  |  |
+
 ## __crypto_ohlc_daily
 外部データソースから取得したチャート
 
@@ -71,7 +86,7 @@
 | market | VARCHAR(255) |  |  |  |  |  |  |
 | product | VARCHAR(255) |  |  |  |  |  |  |
 | periods | INTEGER |  |  |  |  |  |  |
-| close_time | DATETIME |  |  |  |  |  |  |
+| close_time | DATE |  |  |  |  |  |  |
 | open_price | FLOAT |  |  |  |  |  |  |
 | high_price | FLOAT |  |  |  |  |  |  |
 | low_price | FLOAT |  |  |  |  |  |  |
@@ -86,6 +101,36 @@
 | t_sma_30 | FLOAT |  |  |  |  | 0 |  |
 | t_sma_200 | FLOAT |  |  |  |  | 0 |  |
 | t_cross | INTEGER |  |  |  |  | 0 | 1=golden cross -1=dead cross |
+
+## crypto_trade_results
+| name | type | pk | unique | index | nullable | default | comment |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| id | INTEGER | x |  |  |  |  |  |
+| provider | VARCHAR(255) |  |  |  |  | "" |  |
+| market | VARCHAR(255) |  |  |  |  |  |  |
+| product | VARCHAR(255) |  |  |  |  |  |  |
+| periods | INTEGER |  |  |  |  |  |  |
+| size | DECIMAL |  |  |  |  |  |  |
+| ask_or_bid | INTEGER |  |  |  |  |  |  |
+| entry_date | DATETIME |  |  |  |  |  |  |
+| entry_close_date | DATETIME |  |  |  |  |  |  |
+| entry_side | VARCHAR(255) |  |  |  |  |  |  |
+| entry_price | DECIMAL |  |  |  |  |  |  |
+| entry_commission | DECIMAL |  |  |  |  |  |  |
+| entry_reason | VARCHAR(255) |  |  |  |  |  |  |
+| settle_date | DATETIME |  |  |  |  |  |  |
+| settle_close_date | DATETIME |  |  |  |  |  |  |
+| settle_side | VARCHAR(255) |  |  |  |  |  |  |
+| settle_price | DECIMAL |  |  |  |  |  |  |
+| settle_commission | DECIMAL |  |  |  |  |  |  |
+| settle_reason | VARCHAR(255) |  |  |  |  |  |  |
+| job_name | VARCHAR(255) |  |  |  |  |  |  |
+| job_version | VARCHAR(255) |  |  |  |  |  |  |
+| is_back_test | BOOLEAN |  |  |  |  | False |  |
+| close_date_interval | INTEGER |  |  |  |  |  |  |
+| diff_profit | DECIMAL |  |  |  |  |  |  |
+| diff_profit_rate | DECIMAL |  |  |  |  |  |  |
+| fact_profit | DECIMAL |  |  |  |  |  |  |
 
 ## __topic
 | name | type | pk | unique | index | nullable | default | comment |
@@ -103,6 +148,7 @@
 | name | type | pk | unique | index | nullable | default | comment |
 | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
 | id | INTEGER | x |  |  |  |  |  |
+| version | INTEGER |  |  |  |  | 0 |  |
 | name | VARCHAR(255) |  |  |  |  |  |  |
 | description | VARCHAR(1024) |  |  |  |  |  |  |
 | provider | VARCHAR(255) |  |  |  |  |  |  |
@@ -111,13 +157,16 @@
 | periods | INTEGER |  |  |  |  |  |  |
 | cron | VARCHAR(255) |  |  |  |  |  |  |
 | broker | VARCHAR(255) |  |  |  |  |  |  |
-| order_id | FLOAT |  |  |  | x |  |  |
 | trade_rule | JSON |  |  |  |  | {} |  |
+| trade_type | VARCHAR(255) |  |  |  |  |  |  |
+| monitor_topic | VARCHAR(255) |  |  |  |  |  |  |
+| detector_name | VARCHAR(255) |  |  |  |  |  |  |
 
 ## trade_job
 | name | type | pk | unique | index | nullable | default | comment |
 | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
 | id | INTEGER | x |  |  |  |  |  |
+| version | INTEGER |  |  |  |  | 0 |  |
 | name | VARCHAR(255) |  |  |  |  |  |  |
 | description | VARCHAR(1024) |  |  |  |  |  |  |
 | provider | VARCHAR(255) |  |  |  |  |  |  |
@@ -126,8 +175,11 @@
 | periods | INTEGER |  |  |  |  |  |  |
 | cron | VARCHAR(255) |  |  |  |  |  |  |
 | broker | VARCHAR(255) |  |  |  |  |  |  |
-| order_id | FLOAT |  |  |  | x |  |  |
 | trade_rule | JSON |  |  |  |  | {} |  |
+| trade_type | VARCHAR(255) |  |  |  |  |  |  |
+| monitor_topic | VARCHAR(255) |  |  |  |  |  |  |
+| detector_name | VARCHAR(255) |  |  |  |  |  |  |
+| order_status | JSON |  |  |  | x |  |  |
 
 ## ingester_jobgroup
 | name | type | pk | unique | index | nullable | default | comment |

@@ -5,6 +5,7 @@ from sqlalchemy.ext.declarative import declared_attr
 
 class TradeProfileBase:
     id = sa.Column(sa.Integer, primary_key=True)
+    version = sa.Column(sa.Integer, nullable=False, default=0)
     name = sa.Column(sa.String(255), nullable=False)
     description = sa.Column(sa.String(1024), nullable=False)
     provider = sa.Column(sa.String(255), nullable=False)
@@ -13,8 +14,11 @@ class TradeProfileBase:
     periods = sa.Column(sa.Integer, nullable=False)
     cron = sa.Column(sa.String(255), nullable=False)
     broker = sa.Column(sa.String(255), nullable=False)
-    order_id = sa.Column(sa.Float, nullable=True)
     trade_rule = sa.Column(sa.JSON, nullable=False, default={})
+    job_type = sa.Column(sa.String(255), nullable=True)
+    trade_type = sa.Column(sa.String(255), nullable=False)
+    monitor_topic = sa.Column(sa.String(255), nullable=False)
+    detector_name = sa.Column(sa.String(255), nullable=False)
 
     @declared_attr
     def __table_args__(cls):
@@ -27,10 +31,10 @@ class TradeProfile(TradeProfileBase, Base):
     __tablename__ = "trade_profile"
 
 
-
 class TradeJob(TradeProfileBase, Base):
     __tablename__ = "trade_job"
-
+    last_check_date = sa.Column(sa.DateTime, nullable=True)
+    order_status = sa.Column(sa.JSON, nullable=True)
 
 
 

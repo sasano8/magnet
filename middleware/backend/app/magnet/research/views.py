@@ -1,10 +1,7 @@
 from enum import Enum
 from typing import List
-
-from pip._internal import req
-
-from magnet import Session, default_query, CommonQuery, get_db, Depends
-from magnet.vendors import cbv, InferringRouter, TemplateView
+from magnet import Session, PagenationQuery, get_db, Depends
+from magnet.vendors import cbv, InferringRouter, TemplateView, fastapi_funnel
 from . import models, crud, schemas
 
 
@@ -30,7 +27,8 @@ class CaseNodeView(TemplateView[crud.Casenode]):
         return super().rep
 
     @router.get("/case")
-    async def index(self, q: CommonQuery = default_query) -> List[schemas.CaseNode]:
+    @fastapi_funnel
+    async def index(self, q: PagenationQuery) -> List[schemas.CaseNode]:
         return super().index(skip=q.skip, limit=q.limit)
 
     @router.post("/case")
@@ -63,7 +61,8 @@ class TargetView(TemplateView[crud.Target]):
         return super().rep
 
     @router.get("/target")
-    async def index(self, q: CommonQuery = default_query) -> List[schemas.Target]:
+    @fastapi_funnel
+    async def index(self, q: PagenationQuery) -> List[schemas.Target]:
         return super().index(skip=q.skip, limit=q.limit)
 
     @router.post("/target")

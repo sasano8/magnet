@@ -75,6 +75,7 @@ jupyter = "^1.0.0"
 jupyter-contrib-nbextensions = "^0.5.1"
 matplotlib = "^3.3.2"
 streamlit = "^0.69.2"
+jsonnet = "^0.16.0"
 
 
 [tool.poetry.dev-dependencies]

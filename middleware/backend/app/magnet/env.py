@@ -92,7 +92,6 @@ class UserAccessToken(EnvBase):
     expire_minutes: int = 30
 
 
-@Instantiate
 class Env(BaseSettings):
     class Config:
         arbitrary_types_allowed = True
@@ -113,9 +112,13 @@ class Env(BaseSettings):
             queue_delete=True,
         )
     }
-    crawlers: Tag = Tag(tag="crawler", key_selector=lambda func: func.__name__)
-    trade_algorithms: Tag = Tag(tag="trade_algorithm", key_selector=lambda func: func.__name__)
     api_credentials: Dict[str, APICredential] = {
         "zaif": APICredentialZaif(),
         "bitflyer": APICredentialBitflyer()
     }
+    crawlers: Tag = Tag(tag="crawler", key_selector=lambda func: func.__name__)
+    trade_algorithms: Tag = Tag(tag="trade_algorithm", key_selector=lambda func: func.__name__)
+
+
+Env = Env()
+

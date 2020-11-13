@@ -1,7 +1,7 @@
 import datetime
 from magnet.database import get_db
 from magnet.datastore import crud, schemas
-from .impl import exchanges
+from magnet.trader_clients import exchanges
 
 
 async def load_pairs(db, /):

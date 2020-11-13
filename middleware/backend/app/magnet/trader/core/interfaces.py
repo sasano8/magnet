@@ -1,8 +1,9 @@
 import datetime
 from typing import Literal, Union
 from pydantic import validator, root_validator, Field
-from magnet import BaseModel
+from magnet import BaseModel, logger
 from magnet.vendors import funnel
+
 
 
 class Order(BaseModel):
@@ -15,6 +16,7 @@ class Order(BaseModel):
     price: float = None
     amount: float = 0
     limit: float = None
+    loss: float = None
     comment: str = None
     reason: str = ""
     sys_comment: str = "テスト中"
@@ -105,6 +107,11 @@ class OrderStatus(BaseModel):
         """反対売買のためのorderを作成する"""
         order = entry_order.copy(deep=True)
         order.bid_or_ask = order.get_invert_bid_or_ask()
+
+        # ポジションクローズ用の注文のため、limit orderは不要
+        # limit orderはエントリーオーダーに定義されている
+        order.limit = None
+        order.loss = None
         return order
 
 
@@ -124,13 +131,15 @@ class BrokerBase:
     async def get_ticker(self, currency_pair: str):
         raise NotImplementedError()
 
-    @funnel
     async def post_order(self, order: Order) -> Order:
         raise NotImplementedError()
 
-    @funnel
     async def fetch_order_result(self, order: Order) -> OrderResult:
         raise NotImplementedError()
+
+    async def fetch_order_result_for_limit(self, order: Order, close_time_or_every_second):
+        """limit指定の場合に、売買を完了とする処理を実装する。シミュレータの場合は、対象日終値がリミットが超えていた場合結果を返す"""
+        return await self.fetch_order_result(order)
 
     async def order(self, entry_or_settle_or_dummy, profile, close_time_or_every_second, db):
         profile = profile.copy(deep=True)
@@ -148,10 +157,8 @@ class BrokerBase:
             profile.last_check_date = close_time_or_every_second
         else:
             raise Exception()
-        from magnet import get_db
-        from magnet.trade_profile.schemas import TradeJob
-        from magnet.trade_profile.crud import TradeJob as TradeJobCrud
-        # for db in get_db():
+        from magnet.trader.schemas import TradeJob
+        from magnet.trader.crud import TradeJob as TradeJobCrud
         crud = TradeJobCrud(db)
         result = crud.update(data=profile)
 
@@ -159,6 +166,7 @@ class BrokerBase:
 
     async def get_topic(self, db, job, close_time_or_every_second):
         import magnet.datastore.crud
+        import magnet.datastore.schemas
         ohlc = magnet.datastore.crud.CryptoOhlcDaily(db)
         result = ohlc.get_ticker(
             provider=job.provider,
@@ -167,20 +175,22 @@ class BrokerBase:
             periods=job.periods,
             close_time=close_time_or_every_second
         )
+        result = magnet.datastore.schemas.Ohlc.from_orm(result)
         return result
 
     def detect_signal(self, ticker) -> Union[Literal["ask", "bid"], None]:
-        # サイン検出
-        if ticker.t_cross == 0:
-            return None
-        elif ticker.t_cross == 1:
-            return "ask"
-        elif ticker.t_cross == -1:
-            return "bid"
+        pass
+
+    async def notify(self, sign, close_time_or_every_second):
+        if sign == "ask":
+            pass
+        elif sign == "bid":
+            pass
+        elif sign == "limit":
+            logger.info(f"{close_time_or_every_second} detect limit.")
+        elif sign == "loss":
+            logger.info(f"{close_time_or_every_second} detect loss.")
         else:
             raise Exception()
-
-    def detect_limit_signal(self) -> bool:
-        return False
 
 

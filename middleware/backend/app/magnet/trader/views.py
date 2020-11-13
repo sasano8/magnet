@@ -4,10 +4,12 @@ from typing import List, Literal, Union
 from fastapi import Query, Body, status
 from magnet import get_db, Session, PagenationQuery, Depends, HTTPException, Env, BaseModel, logger
 from magnet.vendors import cbv, InferringRouter, TemplateView, build_exception, fastapi_funnel
-from . import crud, schemas, models
-from magnet.trade import interface
-from magnet.trade.crud import brokers
-
+from . import crud, schemas, models, algorithms
+# from magnet.trader_broker import interface
+from .core import interfaces
+# from magnet.trader_broker.crud import brokers
+from magnet.trader.crud import brokers
+from magnet.trader import etl
 
 router = InferringRouter()
 
@@ -111,6 +113,14 @@ class TradeJobView(TemplateView[crud.TradeJob]):
     #
     #     return result
 
+    @router.post("/worker/{id}/reset_order_status")
+    async def reset_order_status(self, id: int) -> schemas.TradeJob:
+        obj = await self.get(id=id)
+        data = schemas.TradeJob.from_orm(obj)
+        data.order_status = None
+        data.last_check_date = None
+        return await self.patch(id=id, data=data)
+
     @router.post("/worker/{id}/exec")
     async def exec(self, id: int):
         """ジョブを実行する。last_check_dateからさかのぼってエントリーを行う。Noneの場合は、本日分よりトレードを行う。"""
@@ -168,96 +178,111 @@ class TradeJobView(TemplateView[crud.TradeJob]):
             raise Exception()
 
         # broker.get_topic
-        # broker.detect_signal
         # broker.scheduler = scheduler
         # broker.trade_type = None
         broker.db = self.db
+        broker.detect_signal = algorithms.detectors.get(job.detector_name)
 
         for dt in scheduler:
             # ジョブを更新しないと状態が更新されない
             # tmp = await self.get(id=id)
             # job = schemas.TradeJob.from_orm(tmp)
-            job = await self.exec2(job, broker, dt)
+            job = await self.stop_and_reverse(job, broker, dt)
 
         return job
 
-    async def exec2(self, job, broker, close_time_or_every_second) -> schemas.TradeJob:
+    async def stop_and_reverse(self, job, broker, close_time_or_every_second) -> schemas.TradeJob:
         """ドテン方式アルゴリズムを実行する"""
         check = broker.valid_currency_pair(job.product)  # 念の為有効なプロダクト名か確認
 
-        close_time_or_every_second
         today = close_time_or_every_second + datetime.timedelta(days=1)
 
         # 最新データがあるか確認
-        topic = await broker.get_topic(self.db, job, today)
-        if not topic:
+        today_topic = await broker.get_topic(self.db, job, today)
+        if not today_topic:
             logger.warning(f"{today}のデータがありません。")
             return job
-            # raise build_exception(
-            #     status_code=500,
-            #     loc=(),
-            #     msg="当日分のデータがありません。最新データをロードしてください。日本時間9時が日付変更時間です。",
-            # )
 
         # 昨日分のデータを取得
         topic = await broker.get_topic(self.db, job, close_time_or_every_second)
 
         # topic.t_cross = 1  # mock test
+        limit_or_loss = job.detect_limit_loss(today_topic.close_price)
+        if limit_or_loss:
+            if job.order_status:
+                if job.order_status.status == "entried":
+                    job = await broker.order("settle", job, today, self.db)
+                    await broker.notify(limit_or_loss, close_time_or_every_second)
+
+                if job.order_status and job.order_status.status == "settled":
+                    retry_count = 5
+                    for i in range(retry_count):
+                        await asyncio.sleep(broker.sleep_interval)  # 注文直後は証拠金や注文がが更新されていないため、少し時間を開ける
+                        entry_order = await broker.fetch_order_result(job.order_status.entry_order)
+                        settle_order = await broker.fetch_order_result(job.order_status.settle_order)
+                        if (entry_order is None or settle_order is None) == False:
+                            break
+
+                    job.order_status.entry_order = entry_order
+                    job.order_status.settle_order = settle_order
+
+                    # トレード結果を保存
+                    rep_result = crud.TradeResult(self.db)
+                    rep_result.create_from_job(job)
+
+                    job.order_status = None
+                    await self.patch(id=job.id, data=job)
 
         # サイン検出
         bid_or_ask = broker.detect_signal(topic)
-        is_limit = broker.detect_limit_signal()
-        if bid_or_ask is None and not is_limit:
+        if bid_or_ask is None:
             return await broker.order("pass", job, today, self.db)  # 最終チェック日を更新
 
-        if job.order_status is not None:
-            # 順番変えるな
+        if job.order_status:
             if job.order_status.status == "entried":
-                # 発注
                 job = await broker.order("settle", job, today, self.db)
 
-            if job.order_status.status == "settled":
-                retry_count = 5
-                for i in range(retry_count):
-                    await asyncio.sleep(broker.sleep_interval)  # 注文直後は証拠金や注文がが更新されていないため、少し時間を開ける
-                    entry_order = await broker.fetch_order_result(job.order_status.entry_order)
-                    settle_order = await broker.fetch_order_result(job.order_status.settle_order)
-                    if (entry_order is None or settle_order is None) == False:
-                        break
+        if job.order_status and job.order_status.status == "settled":
+            retry_count = 5
+            for i in range(retry_count):
+                await asyncio.sleep(broker.sleep_interval)  # 注文直後は証拠金や注文がが更新されていないため、少し時間を開ける
+                entry_order = await broker.fetch_order_result(job.order_status.entry_order)
+                settle_order = await broker.fetch_order_result(job.order_status.settle_order)
+                if (entry_order is None or settle_order is None) == False:
+                    break
 
-                job.order_status.entry_order = entry_order
-                job.order_status.settle_order = settle_order
+            job.order_status.entry_order = entry_order
+            job.order_status.settle_order = settle_order
 
-                # トレード結果を保存
-                rep_result = crud.TradeResult(self.db)
-                rep_result.create_from_job(job)
+            # トレード結果を保存
+            rep_result = crud.TradeResult(self.db)
+            rep_result.create_from_job(job)
 
-                job.order_status = None
-                await self.patch(id=job.id, data=job)
+            job.order_status = None
+            await self.patch(id=job.id, data=job)
 
         # 発注済みなら実行しない
         if job.order_status and job.order_status.status == "entried":
             return await broker.order("pass", job, today, self.db)  # 最終チェック日を更新
 
-        # 新規注文
-        # 数量計算
-        amount = self.calc_amount()
-        limit = self.calc_limit()
+        current_price = topic.close_price
+        # current_price = broker.get_ticker()
 
-        entry_order = interface.Order(
+        entry_order = interfaces.Order(
             bid_or_ask=bid_or_ask,
             order_type="market",
             time_in_force="GTC",
             currency_pair=job.product,
             # price=profile.trade_rule.entry,
-            amount=amount,
-            limit=limit,
+            amount=job.calc_amount(current_price),
+            limit=job.calc_limit(bid_or_ask, current_price),
+            loss=job.calc_loss(bid_or_ask, current_price),
             comment="cross"
         )
         # 決済用注文
-        settle_order = interface.OrderStatus.create_settle_order(entry_order)
+        settle_order = interfaces.OrderStatus.create_settle_order(entry_order)
 
-        job.order_status = interface.OrderStatus(
+        job.order_status = interfaces.OrderStatus(
             entry_order=entry_order,
             settle_order=settle_order,
         )
@@ -266,21 +291,27 @@ class TradeJobView(TemplateView[crud.TradeJob]):
         return await broker.order("entry", job, today, self.db)
 
 
-    @router.post("/worker/{id}/reset_order_status")
-    async def reset_order_status(self, id: int) -> schemas.TradeJob:
-        obj = await self.get(id=id)
-        data = schemas.TradeJob.from_orm(obj)
-        data.order_status = None
-        data.last_check_date = None
-        return await self.patch(id=id, data=data)
+@cbv(router)
+class Etl:
+    db: Session = Depends(get_db)
 
-    def get_last_sign_date(self):
-        pass
+    @router.post("/etl/load_all")
+    async def load_all(self):
+        all_result = {}
+        result = await self.load_pairs()
+        all_result["load_pairs"] = result
 
-    def calc_limit(self) -> float:
-        return None
+        result = await self.load_ohlc()
+        all_result["load_ohlc"] = result
 
-    def calc_amount(self) -> float:
-        return 0.01
+        return all_result
+
+    @router.post("/etl/load_pairs")
+    async def load_pairs(self):
+        return await etl.load_pairs(self.db)
+
+    @router.post("/etl/load_ohlc")
+    async def load_ohlc(self):
+        return await etl.load_ohlc(self.db)
 
 

@@ -5,13 +5,10 @@ from urllib.parse import urlencode
 from .. import enums
 from libs import decorators, create_params
 from pydantic import BaseModel
-from typing import Optional
 import datetime
 import json
 from enum import Enum
 from typing import List, Literal
-import time
-from magnet.env import Env
 
 
 class Market(BaseModel):
@@ -629,7 +626,5 @@ class BitflyerPrivateAPI(BitflyerPublicAPI):
         return res.text
 
 
-# @crud.exchanges
-@decorators.Instantiate(api_key=Env.api_credentials["bitflyer"].api_key.get_secret_value(), api_secret=Env.api_credentials["bitflyer"].api_secret.get_secret_value())
 class Bitflyer(BitflyerPrivateAPI):
     pass

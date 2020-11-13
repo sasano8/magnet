@@ -149,6 +149,7 @@ class GenericRepository(Generic[Alchemy]):
         if obj is None:
             return None
         dic = data.dict(exclude_unset=True)  # 未設定の価は更新しない
+        # TODO: モデルに属性が定義されていない場合、存在しない属性は無視されてしまう？
         [setattr(obj, k, v) for k, v in dic.items()]
         self.db.commit()
         self.db.refresh(obj)

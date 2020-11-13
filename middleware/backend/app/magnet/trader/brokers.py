@@ -3,10 +3,12 @@ from typing import Literal, Union
 import datetime
 from libs.linq import Linq
 from libs.decorators import Instantiate
-from magnet.trade.interface import BrokerBase, Order, OrderResult
+from .core.interfaces import BrokerBase, Order, OrderResult
 from magnet.vendors import Linq, MiniDB, funnel
-from .. import exchanges, enums
-from ... import schemas
+from magnet.trader_clients import enums, exchanges
+from magnet.trader import schemas
+from magnet.env import Env
+
 
 class BrokerRepository(MiniDB[BrokerBase]):
     def instatiate(self, key: str) -> BrokerBase:
@@ -19,6 +21,9 @@ class BrokerRepository(MiniDB[BrokerBase]):
 
 brokers = BrokerRepository()
 
+
+api_bitflyer = exchanges.Bitflyer(api_key=Env.api_credentials["bitflyer"].api_key.get_secret_value(), api_secret=Env.api_credentials["bitflyer"].api_secret.get_secret_value())
+api_zaif = exchanges.Zaif(api_key=Env.api_credentials["zaif"].api_key.get_secret_value(), api_secret=Env.api_credentials["zaif"].api_secret.get_secret_value())
 
 @brokers.add
 # @Instantiate
@@ -38,7 +43,7 @@ class Zaif(BrokerBase):
 
     async def get_ticker(self, currency_pair: str):
         exchange_currency_pair = self.map_currency_pair(currency_pair)
-        result = await exchanges.Zaif.get_ticker(currency_pair=exchange_currency_pair)
+        result = await api_zaif.get_ticker(currency_pair=exchange_currency_pair)
         now = datetime.datetime.now()
         return schemas.TickerInfo(
             product_common=currency_pair,
@@ -57,9 +62,9 @@ class Zaif(BrokerBase):
             # ask=result.high,
         )
 
-    # currency_pair: str exchanges.Zaif.currency_pairs
+    # currency_pair: str api_zaif.currency_pairs
     async def post_buy(self, order: Order):
-        return await exchanges.Zaif.post_trade(
+        return await api_zaif.post_trade(
             currency_pair=currency_pair,
             action="bid",
             price=1,
@@ -68,9 +73,9 @@ class Zaif(BrokerBase):
             comment=comment
         )
 
-    # currency_pair: str exchanges.Zaif.currency_pairs
+    # currency_pair: str api_zaif.currency_pairs
     async def post_sell(self, order: Order):
-        return await exchanges.Zaif.post_trade(
+        return await api_zaif.post_trade(
             currency_pair=currency_pair,
             action="ask",
             price=1,
@@ -99,7 +104,7 @@ class Bitflyer(BrokerBase):
         exchange_currency_pair = self.map_currency_pair(currency_pair)
         now = datetime.datetime.now()
 
-        b_result = await exchanges.Bitflyer.get_ticker(product_code=exchange_currency_pair)
+        b_result = await api_bitflyer.get_ticker(product_code=exchange_currency_pair)
         now = b_result.timestamp
         close_time = datetime.datetime(now.year, now.month, now.day + 1)
 
@@ -133,12 +138,12 @@ class Bitflyer(BrokerBase):
         order = order.copy(deep=True)
         order_dic = self.build_order(order)
 
-        # commission = await exchanges.Bitflyer.get_tradingcommission(
+        # commission = await api_bitflyer.get_tradingcommission(
         #     product_code=order_dic["product_code"]
         # )
 
         try:
-            result = await exchanges.Bitflyer.post_sendchildorder(
+            result = await api_bitflyer.post_sendchildorder(
                 **order_dic
             )
         except Exception as e:
@@ -155,7 +160,7 @@ class Bitflyer(BrokerBase):
     async def fetch_order_result(self, order: Order):
         order_dic = self.build_order(order)
         try:
-            result = await exchanges.Bitflyer.get_childorders(
+            result = await api_bitflyer.get_childorders(
                 product_code=order_dic["product_code"],
                 child_order_acceptance_id=order.result_info["result"]["child_order_acceptance_id"]
             )
@@ -282,17 +287,6 @@ class BackTest(BrokerBase):
         self.date_price[close_time_or_every_second] = result.close_price
         return result
 
-    def detect_signal(self, ticker) -> Union[Literal["ask", "bid"], None]:
-        # サイン検出
-        if ticker.t_cross == 0:
-            return None
-        elif ticker.t_cross == 1:
-            return "bid"
-        elif ticker.t_cross == -1:
-            return "ask"
-        else:
-            raise Exception()
-
     # async def get_ticker(self, currency_pair: str):
     #     return self.latest_ticker
 
@@ -316,4 +310,33 @@ class BackTest(BrokerBase):
         order.price = average_price
         return order
 
+    async def fetch_order_result_for_limit(self, order: Order, close_time_or_every_second):
+        limit_or_loss = None
+        price = self.date_price[close_time_or_every_second]
+
+        if order.limit and order.limit < price:
+            limit_or_loss = "limit"
+
+        if order.loss and price < order.loss:
+            limit_or_loss = "loss"
+
+        if limit_or_loss is None:
+            return None
+
+        price = self.date_price[close_time_or_every_second]
+        exec_price = price
+        average_price = price
+        # size = 1
+        commission = 0
+        order = OrderResult(
+            **order.dict(),
+            commission=commission,
+            exec_price=exec_price
+        )
+        order.price = average_price
+        order.reason = limit_or_loss
+        return order
+
+    # def detect_limit_signal(self) -> bool:
+    #     return False
 

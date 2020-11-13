@@ -2,7 +2,6 @@ import hashlib
 import httpx
 import hmac
 from urllib.parse import urlencode
-from ... import crud
 from .. import enums
 from libs import decorators
 from pydantic import BaseModel
@@ -524,8 +523,7 @@ class ZaifPaymentAPI(ZaifOAuthAPI):
     pass
 
 
-# @crud.exchanges
-@decorators.Instantiate(api_key=Env.api_credentials["zaif"].api_key.get_secret_value(), api_secret=Env.api_credentials["zaif"].api_secret.get_secret_value())
+# @decorators.Instantiate(api_key=Env.api_credentials["zaif"].api_key.get_secret_value(), api_secret=Env.api_credentials["zaif"].api_secret.get_secret_value())
 class Zaif(ZaifPaymentAPI):
     pass
 

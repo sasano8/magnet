@@ -1,9 +1,10 @@
-from typing import Literal
+from typing import Literal, Callable
 from magnet import GenericRepository
 from . import models
 import magnet.datastore.crud
 import magnet.datastore.schemas
 from . import schemas
+from .brokers import brokers
 
 
 class TradeProfile(GenericRepository[models.TradeProfile]):
